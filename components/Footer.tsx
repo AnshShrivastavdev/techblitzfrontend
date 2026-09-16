@@ -49,8 +49,12 @@ export function Footer() {
           {/* Brand Info with explicit title */}
           <div className="flex flex-col">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded border border-white/20 bg-neutral-950 flex items-center justify-center text-xs font-mono font-bold text-white">
-                CJ
+              <div className="w-10 h-10 rounded border border-cyan-500/40 bg-[#020b18] overflow-hidden flex items-center justify-center shadow-[0_0_12px_rgba(6,182,212,0.2)]">
+                <img
+                  src="/cosmos-tight.png"
+                  alt="COSMOS"
+                  className="w-full h-full object-contain p-0.5"
+                />
               </div>
               <h3 className="text-base sm:text-lg font-bold font-mono tracking-wider text-white">
                 Cosmos JEC - Jabalpur Engineering College

@@ -25,8 +25,12 @@ export function Navbar() {
           href="/"
           className="flex items-center gap-3 group text-left cursor-pointer"
         >
-          <div className="w-8 h-8 rounded border border-white/25 bg-neutral-950 flex items-center justify-center text-xs font-mono font-bold text-white group-hover:border-white transition-colors">
-            CJ
+          <div className="w-10 h-10 rounded border border-cyan-500/40 bg-[#020b18] overflow-hidden flex items-center justify-center group-hover:border-cyan-400 transition-all shadow-[0_0_14px_rgba(6,182,212,0.3)]">
+            <img
+              src="/cosmos-tight.png"
+              alt="COSMOS"
+              className="w-full h-full object-contain p-0.5 transform group-hover:scale-105 transition-transform duration-300"
+            />
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-bold tracking-wider font-mono text-white group-hover:text-neutral-200">

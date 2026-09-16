@@ -98,8 +98,12 @@ export function VideoPreloader({
       {/* Top HUD Bar */}
       <header className="relative z-10 w-full p-4 sm:p-10 flex items-center justify-between">
         <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="w-8 h-8 rounded border border-white/30 bg-black/60 backdrop-blur flex items-center justify-center text-xs font-mono font-bold text-white shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-            CJ
+          <div className="w-10 h-10 rounded border border-cyan-500/40 bg-[#020b18] overflow-hidden flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.35)]">
+            <img
+              src="/cosmos-tight.png"
+              alt="COSMOS"
+              className="w-full h-full object-contain p-0.5"
+            />
           </div>
           <div className="flex flex-col">
             <span className="text-xs sm:text-sm font-mono font-bold tracking-wider text-white drop-shadow">

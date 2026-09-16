@@ -101,3 +101,13 @@ html.lenis, html.lenis body {
 .lenis.lenis-scrolling iframe {
   pointer-events: none;
 }
+
+/* Hide Next.js Development Indicator */
+[data-nextjs-dev-tools-button],
+#next-route-announcer,
+nextjs-portal {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
