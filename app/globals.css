@@ -10,11 +10,17 @@ html {
   scroll-behavior: auto;
   background-color: #000000;
   color: #ededed;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background-color: #000000;
   color: #ededed;
+  width: 100%;
+  max-width: 100vw;
   overflow-x: hidden;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }

@@ -421,12 +421,12 @@ export function CanvasScroller() {
           </div>
 
           {/* Large High-Contrast Percentage Counter */}
-          <div className="text-7xl sm:text-8xl font-black font-mono tracking-tighter text-white">
+          <div className="text-6xl sm:text-8xl font-black font-mono tracking-tighter text-white">
             {loadPercent}%
           </div>
 
           {/* Minimalist 2px White Progress Bar */}
-          <div className="w-full h-[2px] bg-neutral-900 border border-neutral-800 my-8 overflow-hidden">
+          <div className="w-full h-[2px] bg-neutral-900 border border-neutral-800 my-6 sm:my-8 overflow-hidden">
             <div
               className="h-full bg-white transition-all duration-75 ease-out"
               style={{ width: `${loadPercent}%` }}
@@ -434,13 +434,13 @@ export function CanvasScroller() {
           </div>
 
           {/* Monospace Telemetry Subtext */}
-          <div className="w-full flex justify-between font-mono text-[11px] text-neutral-500 tracking-wider">
+          <div className="w-full flex justify-between font-mono text-[10px] sm:text-[11px] text-neutral-500 tracking-wider">
             <span>FRAMES BUFFERED</span>
             <span className="text-neutral-300">
               {Math.round((loadPercent / 100) * TOTAL_FRAMES)} / {TOTAL_FRAMES}
             </span>
           </div>
-          <div className="w-full flex justify-between font-mono text-[11px] text-neutral-500 tracking-wider mt-1">
+          <div className="w-full flex justify-between font-mono text-[10px] sm:text-[11px] text-neutral-500 tracking-wider mt-1">
             <span>TELEMETRY STATUS</span>
             <span className="text-white">
               {loadPercent === 100 ? 'READY TO ENGAGE' : 'DECODING HIGH-RES ASSETS...'}
@@ -449,11 +449,10 @@ export function CanvasScroller() {
         </div>
       </div>
 
-      {/* 2. SCROLL CONTAINER (180vh per scene = 1080vh total scroll depth) */}
+      {/* 2. SCROLL CONTAINER (660vh on mobile, 1080vh on sm/desktop) */}
       <div
         ref={containerRef}
-        className="relative w-full"
-        style={{ height: `${SCENES.length * 180}vh` }}
+        className="relative w-full h-[660vh] sm:h-[1080vh]"
       >
         {/* Sticky Full-Screen Canvas Container */}
         <div className="sticky top-0 left-0 w-full h-screen h-[100dvh] overflow-hidden">
