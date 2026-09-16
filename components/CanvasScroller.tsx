@@ -76,9 +76,12 @@ export function CanvasScroller() {
 
   // Image storage: 2D array of images indexed by [sceneIdx][frameIdx]
   const imagesRef = useRef<HTMLImageElement[][]>(SCENES.map(() => []));
+  const lastDrawnImageRef = useRef<HTMLImageElement | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const currentProgressRef = useRef<number>(0);
   const targetProgressRef = useRef<number>(0);
+  const currentSceneIdxRef = useRef<number>(0);
+  const lastProgressPctRef = useRef<number>(0);
 
   // Helper to format frame path
   const getFramePath = useCallback((sceneIndex: number, frameIndex: number) => {
@@ -248,7 +251,90 @@ export function CanvasScroller() {
     []
   );
 
-  // Render logic for specific progress
+  // Precomputed cumulative scene offsets
+  const SCENE_RANGES = [
+    { sceneIdx: 0, startFrame: 0, count: 300 },
+    { sceneIdx: 1, startFrame: 300, count: 240 },
+    { sceneIdx: 2, startFrame: 540, count: 240 },
+    { sceneIdx: 3, startFrame: 780, count: 240 },
+    { sceneIdx: 4, startFrame: 1020, count: 300 },
+    { sceneIdx: 5, startFrame: 1320, count: 240 },
+  ];
+
+  const getSceneFrameInfo = useCallback((globalFrame: number) => {
+    for (let i = 0; i < SCENE_RANGES.length; i++) {
+      const r = SCENE_RANGES[i];
+      if (globalFrame >= r.startFrame && globalFrame < r.startFrame + r.count) {
+        return {
+          sceneIdx: i,
+          frameInScene: globalFrame - r.startFrame,
+          totalFramesInScene: r.count,
+        };
+      }
+    }
+    const last = SCENE_RANGES[SCENE_RANGES.length - 1];
+    return {
+      sceneIdx: SCENE_RANGES.length - 1,
+      frameInScene: last.count - 1,
+      totalFramesInScene: last.count,
+    };
+  }, []);
+
+  // Dynamic predictive preloader: proactively buffer frames around current scroll position
+  const ensureFramesNearby = useCallback(
+    (sceneIdx: number, frameIdx: number) => {
+      const count = SCENE_RANGES[sceneIdx].count;
+      for (let offset = -5; offset <= 30; offset++) {
+        const f = frameIdx + offset;
+        if (f >= 0 && f < count) {
+          if (!imagesRef.current[sceneIdx]?.[f]) {
+            const img = new Image();
+            img.src = getFramePath(sceneIdx, f);
+            if (!imagesRef.current[sceneIdx]) {
+              imagesRef.current[sceneIdx] = [];
+            }
+            imagesRef.current[sceneIdx][f] = img;
+          }
+        }
+      }
+    },
+    [getFramePath]
+  );
+
+  const getFrameImage = useCallback((sceneIdx: number, frameIdx: number) => {
+    const frames = imagesRef.current[sceneIdx];
+    const count = SCENE_RANGES[sceneIdx].count;
+    const clamped = Math.max(0, Math.min(count - 1, frameIdx));
+
+    if (frames) {
+      const direct = frames[clamped];
+      if (direct && direct.complete && direct.naturalWidth > 0) return direct;
+
+      // Search whole scene outward from nearest frame
+      for (let offset = 1; offset < count; offset++) {
+        const prev = frames[clamped - offset];
+        if (prev && prev.complete && prev.naturalWidth > 0) return prev;
+        const next = frames[clamped + offset];
+        if (next && next.complete && next.naturalWidth > 0) return next;
+      }
+    }
+
+    // Search earlier scenes if current scene is buffering
+    for (let s = sceneIdx - 1; s >= 0; s--) {
+      const sFrames = imagesRef.current[s];
+      if (sFrames) {
+        for (let f = sFrames.length - 1; f >= 0; f--) {
+          const prev = sFrames[f];
+          if (prev && prev.complete && prev.naturalWidth > 0) return prev;
+        }
+      }
+    }
+
+    // Ultimate fallback: never return null if we already drew a frame
+    return lastDrawnImageRef.current;
+  }, []);
+
+  // Render logic for specific progress: strictly monotonic 0 to 1559 covers ALL 1560 frames
   const renderFrameAtProgress = useCallback(
     (progress: number) => {
       const canvas = canvasRef.current;
@@ -256,84 +342,56 @@ export function CanvasScroller() {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      const totalScenes = SCENES.length;
       const clamped = Math.max(0, Math.min(progress, 0.999999));
+      const targetGlobalFrame = Math.min(
+        TOTAL_FRAMES - 1,
+        Math.max(0, Math.floor(clamped * TOTAL_FRAMES))
+      );
 
-      // Determine current scene index and normalized scene progress [0, 1)
-      const rawScene = clamped * totalScenes;
-      const sceneIdx = Math.min(Math.floor(rawScene), totalScenes - 1);
-      const curSceneProgress = rawScene - sceneIdx;
+      const { sceneIdx, frameInScene, totalFramesInScene } = getSceneFrameInfo(targetGlobalFrame);
 
-      setCurrentSceneIdx(sceneIdx);
-      setSceneProgress(curSceneProgress);
+      if (sceneIdx !== currentSceneIdxRef.current) {
+        currentSceneIdxRef.current = sceneIdx;
+        setCurrentSceneIdx(sceneIdx);
+      }
+      const newPct = Math.round((frameInScene / totalFramesInScene) * 100);
+      if (newPct !== lastProgressPctRef.current) {
+        lastProgressPctRef.current = newPct;
+        setSceneProgress(newPct / 100);
+      }
 
-      const curScene = SCENES[sceneIdx];
-      const curSceneFrames = imagesRef.current[sceneIdx];
+      // Dynamically stream upcoming frames around current scroll position
+      ensureFramesNearby(sceneIdx, frameInScene);
 
-      // Clear canvas before drawing
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const BLEND_FRAMES = 6;
+      const isNearEnd =
+        frameInScene >= totalFramesInScene - BLEND_FRAMES && sceneIdx < SCENE_RANGES.length - 1;
 
-      // Smoothly crossfade (alpha blend) the last 10% into the first frame of the next scene
-      const CROSSFADE_THRESHOLD = 0.9;
-
-      if (curSceneProgress < CROSSFADE_THRESHOLD || sceneIdx === totalScenes - 1) {
-        // Normal scene playback (first 90% of scene, or entire final scene)
-        const normalized =
-          sceneIdx === totalScenes - 1
-            ? curSceneProgress
-            : curSceneProgress / CROSSFADE_THRESHOLD;
-
-        const frameIdx = Math.min(
-          Math.floor(normalized * curScene.frameCount),
-          curScene.frameCount - 1
-        );
-
-        // Resilient closest-frame lookup
-        let img = curSceneFrames?.[frameIdx];
-        if (!img || !img.complete || img.naturalWidth === 0) {
-          for (let offset = 1; offset < 35; offset++) {
-            const prev = curSceneFrames?.[frameIdx - offset];
-            if (prev && prev.complete && prev.naturalWidth > 0) {
-              img = prev;
-              break;
-            }
-            const next = curSceneFrames?.[frameIdx + offset];
-            if (next && next.complete && next.naturalWidth > 0) {
-              img = next;
-              break;
-            }
-          }
-          if (!img || !img.complete || img.naturalWidth === 0) {
-            img = curSceneFrames?.[0];
-          }
-        }
-
-        if (img) {
-          drawImageCover(ctx, img, canvas.width, canvas.height, 1.0);
-        }
-      } else {
-        // Crossfade window: last 10% of current scene (progress 0.9 to 1.0)
-        const t = (curSceneProgress - CROSSFADE_THRESHOLD) / (1 - CROSSFADE_THRESHOLD);
-
-        const lastFrameIdx = curScene.frameCount - 1;
-        let curImg = curSceneFrames?.[lastFrameIdx];
-        if (!curImg || !curImg.complete || curImg.naturalWidth === 0) {
-          curImg = curSceneFrames?.[0];
-        }
-
-        const nextSceneFrames = imagesRef.current[sceneIdx + 1];
-        const nextImg = nextSceneFrames?.[0];
+      if (isNearEnd) {
+        const t = (frameInScene - (totalFramesInScene - BLEND_FRAMES)) / BLEND_FRAMES;
+        const curImg = getFrameImage(sceneIdx, frameInScene);
+        const nextImg = getFrameImage(sceneIdx + 1, 0);
 
         if (curImg) {
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
           drawImageCover(ctx, curImg, canvas.width, canvas.height, 1.0);
+          lastDrawnImageRef.current = curImg;
         }
         if (nextImg) {
           drawImageCover(ctx, nextImg, canvas.width, canvas.height, t);
         }
+      } else {
+        const img = getFrameImage(sceneIdx, frameInScene);
+        if (img) {
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          drawImageCover(ctx, img, canvas.width, canvas.height, 1.0);
+          lastDrawnImageRef.current = img;
+        }
       }
     },
-    [drawImageCover]
+    [drawImageCover, ensureFramesNearby, getFrameImage, getSceneFrameInfo]
   );
 
   // Resize handler for Retina displays & responsive cover math
@@ -380,13 +438,14 @@ export function CanvasScroller() {
 
       // Smooth lerp towards target scroll position for 60-120fps fluid scrubbing
       const diff = targetProgressRef.current - currentProgressRef.current;
-      if (Math.abs(diff) > 0.0001) {
+      if (Math.abs(diff) > 0.00005) {
         currentProgressRef.current += diff * 0.18;
-      } else {
+        renderFrameAtProgress(currentProgressRef.current);
+      } else if (currentProgressRef.current !== targetProgressRef.current) {
         currentProgressRef.current = targetProgressRef.current;
+        renderFrameAtProgress(currentProgressRef.current);
       }
 
-      renderFrameAtProgress(currentProgressRef.current);
       rafIdRef.current = requestAnimationFrame(tick);
     };
 
@@ -406,59 +465,59 @@ export function CanvasScroller() {
   return (
     <div className="relative w-full bg-black text-white selection:bg-white selection:text-black">
       {/* 1. MINIMAL BLACK-AND-WHITE LOADING PERCENTAGE SCREEN */}
-      <div
-        className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-black transition-opacity duration-700 select-none ${
-          isLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
-        }`}
-      >
-        <div className="flex flex-col items-center max-w-md w-full px-6">
-          {/* Top Aerospace/Tech Tag */}
-          <div className="flex items-center gap-2 mb-8">
-            <span className="w-2 h-2 bg-white rounded-full animate-ping" />
-            <span className="font-mono text-xs uppercase tracking-[0.25em] text-neutral-400">
-              TECHBLITZ // SYSTEM INITIALIZATION
-            </span>
-          </div>
+      {!isLoaded && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black select-none pointer-events-auto"
+        >
+          <div className="flex flex-col items-center max-w-md w-full px-6">
+            {/* Top Aerospace/Tech Tag */}
+            <div className="flex items-center gap-2 mb-8">
+              <span className="w-2 h-2 bg-white rounded-full animate-ping" />
+              <span className="font-mono text-xs uppercase tracking-[0.25em] text-neutral-400">
+                TECHBLITZ // SYSTEM INITIALIZATION
+              </span>
+            </div>
 
-          {/* Large High-Contrast Percentage Counter */}
-          <div className="text-6xl sm:text-8xl font-black font-mono tracking-tighter text-white">
-            {loadPercent}%
-          </div>
+            {/* Large High-Contrast Percentage Counter */}
+            <div className="text-6xl sm:text-8xl font-black font-mono tracking-tighter text-white">
+              {loadPercent}%
+            </div>
 
-          {/* Minimalist 2px White Progress Bar */}
-          <div className="w-full h-[2px] bg-neutral-900 border border-neutral-800 my-6 sm:my-8 overflow-hidden">
-            <div
-              className="h-full bg-white transition-all duration-75 ease-out"
-              style={{ width: `${loadPercent}%` }}
-            />
-          </div>
+            {/* Minimalist 2px White Progress Bar */}
+            <div className="w-full h-[2px] bg-neutral-900 border border-neutral-800 my-6 sm:my-8 overflow-hidden">
+              <div
+                className="h-full bg-white transition-all duration-75 ease-out"
+                style={{ width: `${loadPercent}%` }}
+              />
+            </div>
 
-          {/* Monospace Telemetry Subtext */}
-          <div className="w-full flex justify-between font-mono text-[10px] sm:text-[11px] text-neutral-500 tracking-wider">
-            <span>FRAMES BUFFERED</span>
-            <span className="text-neutral-300">
-              {Math.round((loadPercent / 100) * TOTAL_FRAMES)} / {TOTAL_FRAMES}
-            </span>
-          </div>
-          <div className="w-full flex justify-between font-mono text-[10px] sm:text-[11px] text-neutral-500 tracking-wider mt-1">
-            <span>TELEMETRY STATUS</span>
-            <span className="text-white">
-              {loadPercent === 100 ? 'READY TO ENGAGE' : 'DECODING HIGH-RES ASSETS...'}
-            </span>
+            {/* Monospace Telemetry Subtext */}
+            <div className="w-full flex justify-between font-mono text-[10px] sm:text-[11px] text-neutral-500 tracking-wider">
+              <span>FRAMES BUFFERED</span>
+              <span className="text-neutral-300">
+                {Math.round((loadPercent / 100) * TOTAL_FRAMES)} / {TOTAL_FRAMES}
+              </span>
+            </div>
+            <div className="w-full flex justify-between font-mono text-[10px] sm:text-[11px] text-neutral-500 tracking-wider mt-1">
+              <span>TELEMETRY STATUS</span>
+              <span className="text-white">
+                {loadPercent === 100 ? 'READY TO ENGAGE' : 'DECODING HIGH-RES ASSETS...'}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* 2. SCROLL CONTAINER (660vh on mobile, 1080vh on sm/desktop) */}
+      {/* 2. SCROLL CONTAINER (1200vh on mobile, 1500vh on sm/desktop) */}
       <div
         ref={containerRef}
-        className="relative w-full h-[660vh] sm:h-[1080vh]"
+        className="relative w-full h-[1200vh] sm:h-[1500vh]"
       >
         {/* Sticky Full-Screen Canvas Container */}
-        <div className="sticky top-0 left-0 w-full h-screen h-[100dvh] overflow-hidden">
+        <div className="sticky top-0 left-0 w-full h-screen h-[100dvh] overflow-hidden pointer-events-none">
           <canvas
             ref={canvasRef}
-            className="w-full h-full block bg-black"
+            className="w-full h-full block bg-black pointer-events-none"
           />
 
           {/* Subtle Film Grain Vignette for contrast */}
