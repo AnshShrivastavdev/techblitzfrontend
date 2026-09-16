@@ -189,7 +189,7 @@ function AuthContent() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-black text-white selection:bg-cyan-500/30">
+    <div className="relative min-h-screen flex flex-col items-center justify-center px-3 sm:px-4 py-6 sm:py-12 bg-black text-white selection:bg-cyan-500/30">
       {/* Three.js Dynamic Shader Lines Background */}
       <ShaderAnimation />
 
@@ -200,28 +200,28 @@ function AuthContent() {
         {/* Return to Launchpad Navigation */}
         <Link
           href="/"
-          className="mb-6 px-4 py-1.5 rounded-full border border-white/20 bg-neutral-950/80 text-xs font-mono text-neutral-400 hover:text-white hover:border-white/50 transition-all flex items-center gap-2 backdrop-blur cursor-pointer group"
+          className="mb-4 sm:mb-6 px-3.5 sm:px-4 py-1.5 rounded-full border border-white/20 bg-neutral-950/80 text-[11px] sm:text-xs font-mono text-neutral-400 hover:text-white hover:border-white/50 transition-all flex items-center gap-2 backdrop-blur cursor-pointer group"
         >
           <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
           <span>← RETURN TO LAUNCHPAD</span>
         </Link>
 
         {/* Branding Header */}
-        <div className="text-center mb-6 flex flex-col items-center">
-          <span className="text-[11px] font-mono tracking-[0.3em] uppercase text-cyan-400 font-bold mb-3 drop-shadow-[0_0_12px_rgba(56,189,248,0.5)]">
+        <div className="text-center mb-5 sm:mb-6 flex flex-col items-center">
+          <span className="text-[10px] sm:text-[11px] font-mono tracking-[0.25em] sm:tracking-[0.3em] uppercase text-cyan-400 font-bold mb-2 sm:mb-3 drop-shadow-[0_0_12px_rgba(56,189,248,0.5)]">
             COSMOS JEC PRESENTS
           </span>
           <img
             src="/techblitz-logo.png"
             alt="TechBlitz Logo"
-            className="w-72 max-w-[85vw] h-auto object-contain filter drop-shadow-[0_0_35px_rgba(56,189,248,0.45)] mb-2"
+            className="w-64 sm:w-72 max-w-[85vw] h-auto object-contain filter drop-shadow-[0_0_35px_rgba(56,189,248,0.45)] mb-1 sm:mb-2"
           />
         </div>
 
         {/* Glass Card */}
-        <div className="w-full rounded-2xl border border-white/15 bg-neutral-950/90 backdrop-blur-2xl p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.9)]">
+        <div className="w-full rounded-2xl border border-white/15 bg-neutral-950/90 backdrop-blur-2xl p-4 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.9)]">
           {/* Role Tabs */}
-          <div className="grid grid-cols-2 p-1 rounded-xl bg-black/60 border border-white/10 mb-6">
+          <div className="grid grid-cols-2 p-1 rounded-xl bg-black/60 border border-white/10 mb-5 sm:mb-6">
             <button
               type="button"
               onClick={() => {
@@ -229,14 +229,14 @@ function AuthContent() {
                 setError('');
                 setSuccess('');
               }}
-              className={`py-2.5 rounded-lg text-xs font-mono font-bold tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              className={`py-2 sm:py-2.5 px-1 sm:px-2 rounded-lg text-[11px] sm:text-xs font-mono font-bold tracking-tight sm:tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer ${
                 role === 'student'
                   ? 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.4)]'
                   : 'text-neutral-400 hover:text-white'
               }`}
             >
-              <GraduationCap className="w-4 h-4" />
-              <span>STUDENT PORTAL</span>
+              <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="truncate">STUDENT PORTAL</span>
             </button>
             <button
               type="button"
@@ -245,14 +245,14 @@ function AuthContent() {
                 setError('');
                 setSuccess('');
               }}
-              className={`py-2.5 rounded-lg text-xs font-mono font-bold tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              className={`py-2 sm:py-2.5 px-1 sm:px-2 rounded-lg text-[11px] sm:text-xs font-mono font-bold tracking-tight sm:tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer ${
                 role === 'speaker'
                   ? 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.4)]'
                   : 'text-neutral-400 hover:text-white'
               }`}
             >
-              <Mic2 className="w-4 h-4" />
-              <span>SPEAKER PORTAL</span>
+              <Mic2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="truncate">SPEAKER PORTAL</span>
             </button>
           </div>
 
@@ -275,14 +275,14 @@ function AuthContent() {
           {role === 'student' && (
             <div>
               {/* Student Mode Switch: Sign In vs Create Account */}
-              <div className="flex border-b border-white/10 mb-6 text-xs font-mono">
+              <div className="flex border-b border-white/10 mb-5 sm:mb-6 text-[11px] sm:text-xs font-mono">
                 <button
                   type="button"
                   onClick={() => {
                     setStudentMode('signin');
                     setError('');
                   }}
-                  className={`flex-1 pb-2.5 text-center font-bold tracking-wider transition-colors cursor-pointer ${
+                  className={`flex-1 pb-2 sm:pb-2.5 text-center font-bold tracking-wider transition-colors cursor-pointer ${
                     studentMode === 'signin'
                       ? 'text-white border-b-2 border-white'
                       : 'text-neutral-500 hover:text-neutral-300'
@@ -296,7 +296,7 @@ function AuthContent() {
                     setStudentMode('create');
                     setError('');
                   }}
-                  className={`flex-1 pb-2.5 text-center font-bold tracking-wider transition-colors cursor-pointer ${
+                  className={`flex-1 pb-2 sm:pb-2.5 text-center font-bold tracking-wider transition-colors cursor-pointer ${
                     studentMode === 'create'
                       ? 'text-white border-b-2 border-white'
                       : 'text-neutral-500 hover:text-neutral-300'
@@ -422,7 +422,7 @@ function AuthContent() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-mono tracking-wider text-neutral-400 mb-1 uppercase">
                         Branch
@@ -479,14 +479,14 @@ function AuthContent() {
           {role === 'speaker' && (
             <div>
               {/* Speaker Mode Switch: Password vs OTP */}
-              <div className="flex border-b border-white/10 mb-6 text-xs font-mono">
+              <div className="flex border-b border-white/10 mb-5 sm:mb-6 text-[11px] sm:text-xs font-mono">
                 <button
                   type="button"
                   onClick={() => {
                     setSpeakerMode('password');
                     setError('');
                   }}
-                  className={`flex-1 pb-2.5 text-center font-bold tracking-wider transition-colors cursor-pointer ${
+                  className={`flex-1 pb-2 sm:pb-2.5 text-center font-bold tracking-wider transition-colors cursor-pointer ${
                     speakerMode === 'password'
                       ? 'text-white border-b-2 border-white'
                       : 'text-neutral-500 hover:text-neutral-300'
@@ -500,13 +500,13 @@ function AuthContent() {
                     setSpeakerMode('otp');
                     setError('');
                   }}
-                  className={`flex-1 pb-2.5 text-center font-bold tracking-wider transition-colors cursor-pointer ${
+                  className={`flex-1 pb-2 sm:pb-2.5 text-center font-bold tracking-wider transition-colors cursor-pointer ${
                     speakerMode === 'otp'
                       ? 'text-white border-b-2 border-white'
                       : 'text-neutral-500 hover:text-neutral-300'
                   }`}
                 >
-                  ONE-TIME PASSCODE (OTP)
+                  OTP VERIFY
                 </button>
               </div>
 

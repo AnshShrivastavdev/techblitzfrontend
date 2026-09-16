@@ -43,9 +43,9 @@ const DiscordIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
 
 export function Footer() {
   return (
-    <footer className="border-t border-white/10 bg-black text-white py-16">
-      <div className="max-w-7xl mx-auto px-6 sm:px-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 mb-12">
+    <footer className="border-t border-white/10 bg-black text-white py-12 sm:py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 mb-10 sm:mb-12">
           {/* Brand Info with explicit title */}
           <div className="flex flex-col">
             <div className="flex items-center gap-3 mb-2">
@@ -68,7 +68,7 @@ export function Footer() {
               href="https://github.com"
               target="_blank"
               rel="noreferrer"
-              className="p-2.5 border border-white/10 rounded-lg hover:border-white hover:text-white hover:bg-white/5 transition-all"
+              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center border border-white/10 rounded-lg hover:border-white hover:text-white hover:bg-white/5 transition-all"
               aria-label="GitHub"
             >
               <GithubIcon className="w-4 h-4" />
@@ -77,7 +77,7 @@ export function Footer() {
               href="https://instagram.com"
               target="_blank"
               rel="noreferrer"
-              className="p-2.5 border border-white/10 rounded-lg hover:border-white hover:text-white hover:bg-white/5 transition-all"
+              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center border border-white/10 rounded-lg hover:border-white hover:text-white hover:bg-white/5 transition-all"
               aria-label="Instagram"
             >
               <InstagramIcon className="w-4 h-4" />
@@ -86,7 +86,7 @@ export function Footer() {
               href="https://linkedin.com"
               target="_blank"
               rel="noreferrer"
-              className="p-2.5 border border-white/10 rounded-lg hover:border-white hover:text-white hover:bg-white/5 transition-all"
+              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center border border-white/10 rounded-lg hover:border-white hover:text-white hover:bg-white/5 transition-all"
               aria-label="LinkedIn"
             >
               <LinkedinIcon className="w-4 h-4" />
@@ -95,7 +95,7 @@ export function Footer() {
               href="https://discord.com"
               target="_blank"
               rel="noreferrer"
-              className="p-2.5 border border-white/10 rounded-lg hover:border-white hover:text-white hover:bg-white/5 transition-all"
+              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center border border-white/10 rounded-lg hover:border-white hover:text-white hover:bg-white/5 transition-all"
               aria-label="Discord"
             >
               <DiscordIcon className="w-4 h-4" />
@@ -104,11 +104,11 @@ export function Footer() {
         </div>
 
         {/* Bottom Coordinates & Pure Black Theme Branding */}
-        <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-[11px] font-mono text-neutral-500">
+        <div className="pt-6 sm:pt-8 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 text-[10px] sm:text-[11px] font-mono text-neutral-500">
           <div>
             <span>Cosmos JEC - Jabalpur Engineering College • Dept of CSE</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <span>LAT 23.2104° N // LON 79.9575° E</span>
             <span>•</span>
             <span>TECHBLITZ © 2026</span>

@@ -90,56 +90,65 @@ export function Navbar() {
         {/* Mobile Hamburger Toggle */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 text-neutral-400 hover:text-white"
+          className="md:hidden p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center text-neutral-300 hover:text-white"
           aria-label="Toggle Navigation Menu"
         >
-          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-white/10 bg-black/95 backdrop-blur-2xl px-6 py-6 font-mono text-xs tracking-widest space-y-4">
+        <div className="md:hidden border-b border-white/10 bg-black/95 backdrop-blur-2xl px-5 py-5 font-mono text-xs tracking-widest space-y-1">
           <button
             onClick={() => scrollTo('about')}
-            className="block w-full text-left text-neutral-300 hover:text-white py-2"
+            className="w-full text-left text-neutral-300 hover:text-white py-3 px-2 rounded hover:bg-white/5 flex items-center min-h-[44px]"
           >
             ABOUT
           </button>
           <button
             onClick={() => scrollTo('speakers')}
-            className="block w-full text-left text-neutral-300 hover:text-white py-2"
+            className="w-full text-left text-neutral-300 hover:text-white py-3 px-2 rounded hover:bg-white/5 flex items-center min-h-[44px]"
           >
             SPEAKERS
           </button>
           <button
             onClick={() => scrollTo('gallery')}
-            className="block w-full text-left text-neutral-300 hover:text-white py-2"
+            className="w-full text-left text-neutral-300 hover:text-white py-3 px-2 rounded hover:bg-white/5 flex items-center min-h-[44px]"
           >
             GALLERY
           </button>
           <button
             onClick={() => scrollTo('faq')}
-            className="block w-full text-left text-neutral-300 hover:text-white py-2"
+            className="w-full text-left text-neutral-300 hover:text-white py-3 px-2 rounded hover:bg-white/5 flex items-center min-h-[44px]"
           >
             FAQ
           </button>
 
           {/* Mobile Auth Buttons */}
-          <div className="pt-3 border-t border-white/10 flex gap-2">
+          <div className="pt-3 border-t border-white/10 flex flex-col gap-2">
+            <div className="flex gap-2">
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex-1 min-h-[44px] flex items-center justify-center text-center text-xs font-semibold border border-white/20 text-white rounded hover:bg-white/10"
+              >
+                LOG IN
+              </Link>
+              <Link
+                href="/login?mode=register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex-1 min-h-[44px] flex items-center justify-center text-center text-xs font-semibold bg-white text-black rounded hover:bg-neutral-200"
+              >
+                SIGN UP
+              </Link>
+            </div>
             <Link
-              href="/login"
+              href="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex-1 py-2.5 text-center text-xs font-semibold border border-white/20 text-white rounded hover:bg-white/10 block"
+              className="w-full min-h-[44px] flex items-center justify-center text-center text-xs font-semibold text-cyan-300 border border-cyan-500/30 bg-cyan-950/20 rounded hover:bg-cyan-900/30"
             >
-              LOG IN
-            </Link>
-            <Link
-              href="/login?mode=register"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex-1 py-2.5 text-center text-xs font-semibold bg-white text-black rounded block"
-            >
-              SIGN UP
+              ⚡ OPEN DASHBOARD
             </Link>
           </div>
         </div>

@@ -466,31 +466,31 @@ export function CanvasScroller() {
           <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/80 via-transparent to-black/40" />
 
           {/* 3. LEFT-ALIGNED HIGH-CONTRAST B&W FROSTED TEXT BOX */}
-          <div className="absolute left-6 sm:left-12 lg:left-16 bottom-12 sm:bottom-16 max-w-md w-[calc(100%-3rem)] sm:w-auto z-20 pointer-events-auto">
-            <div className="bg-black/75 backdrop-blur-2xl border border-white/20 p-6 sm:p-8 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.9)] border-l-4 border-l-white transition-all duration-300">
+          <div className="absolute left-3 right-3 sm:right-auto sm:left-12 lg:left-16 bottom-4 sm:bottom-16 max-w-md w-auto z-20 pointer-events-auto">
+            <div className="bg-black/80 backdrop-blur-2xl border border-white/20 p-4 sm:p-8 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.9)] border-l-4 border-l-white transition-all duration-300">
               {/* Scene Tag and Subtitle */}
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <span className="font-mono text-[11px] tracking-widest text-black bg-white font-bold px-2 py-0.5 uppercase">
+              <div className="flex flex-wrap items-center gap-2 mb-2 sm:mb-3">
+                <span className="font-mono text-[10px] sm:text-[11px] tracking-widest text-black bg-white font-bold px-2 py-0.5 uppercase">
                   {activeScene.tag}
                 </span>
-                <span className="font-mono text-[11px] tracking-wider text-neutral-400 uppercase">
+                <span className="font-mono text-[10px] sm:text-[11px] tracking-wider text-neutral-400 uppercase">
                   {activeScene.subtitle}
                 </span>
               </div>
 
               {/* Dynamic Chapter Title (Scene 5 is strictly "Club Intro") */}
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white uppercase font-sans mb-3">
+              <h2 className="text-xl sm:text-3xl md:text-4xl font-black tracking-tight text-white uppercase font-sans mb-2 sm:mb-3">
                 {activeScene.title}
               </h2>
 
               {/* Scrub Progress Meter */}
-              <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] font-mono tracking-wider text-neutral-400">
+              <div className="mt-3 sm:mt-5 pt-3 sm:pt-4 border-t border-white/10 flex items-center justify-between text-[10px] sm:text-[11px] font-mono tracking-wider text-neutral-400">
                 <span>CHAPTER PROGRESS</span>
                 <span className="text-white font-bold font-mono">
                   {Math.round(sceneProgress * 100)}%
                 </span>
               </div>
-              <div className="w-full h-1 bg-white/10 mt-2 overflow-hidden">
+              <div className="w-full h-1 bg-white/10 mt-1.5 sm:mt-2 overflow-hidden">
                 <div
                   className="h-full bg-white transition-all duration-75"
                   style={{ width: `${Math.round(sceneProgress * 100)}%` }}
@@ -524,8 +524,8 @@ export function CanvasScroller() {
             ))}
           </div>
 
-          {/* Bottom Right Minimal Scroll Indicator */}
-          <div className="absolute right-6 sm:right-12 bottom-12 sm:bottom-16 flex items-center gap-3 z-20 pointer-events-none select-none text-neutral-500 font-mono text-[11px] tracking-widest uppercase">
+          {/* Bottom Right Minimal Scroll Indicator - Hidden on mobile to prevent overlay conflict */}
+          <div className="hidden sm:flex absolute right-6 sm:right-12 bottom-12 sm:bottom-16 items-center gap-3 z-20 pointer-events-none select-none text-neutral-500 font-mono text-[11px] tracking-widest uppercase">
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
             <span>SCROLL TO SCRUB</span>
           </div>

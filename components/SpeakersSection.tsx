@@ -53,25 +53,25 @@ export function SpeakersSection() {
   };
 
   return (
-    <section id="speakers" className="py-24 border-t border-white/10 bg-black">
-      <div className="max-w-7xl mx-auto px-6 sm:px-8">
+    <section id="speakers" className="py-16 sm:py-24 border-t border-white/10 bg-black">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8">
         {/* Section Header */}
-        <div className="mb-14 text-center max-w-2xl mx-auto">
+        <div className="mb-10 sm:mb-14 text-center max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/20 bg-white/5 text-neutral-300 text-xs font-mono tracking-widest mb-3">
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
             <span>ROSTER STATUS // CLEARANCE PENDING</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4 font-mono">
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight text-white mb-3 sm:mb-4 font-mono">
             Speakers & Mentors
           </h2>
-          <p className="text-neutral-400 text-sm sm:text-base">
+          <p className="text-neutral-400 text-xs sm:text-base">
             Distinguished faculty, aerospace researchers, and industry engineering leads.
             Official manifest is undergoing final clearance.
           </p>
         </div>
 
         {/* Minimalist Placeholder Frames with glowing "To Be Announced" badge */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 sm:mb-16">
           {SPEAKER_SLOTS.map((speaker, idx) => (
             <div
               key={idx}
@@ -112,7 +112,7 @@ export function SpeakersSection() {
         </div>
 
         {/* Minimalist Notification Bar */}
-        <div className="max-w-md mx-auto p-6 rounded-xl border border-white/10 bg-neutral-950 text-center">
+        <div className="max-w-md mx-auto p-4 sm:p-6 rounded-xl border border-white/10 bg-neutral-950 text-center">
           <h4 className="text-xs font-bold font-mono tracking-wider text-white mb-2 flex items-center justify-center gap-2">
             <BellRing className="w-4 h-4 text-white" />
             SPEAKER ROSTER TELEMETRY
@@ -121,18 +121,18 @@ export function SpeakersSection() {
             Receive the official keynote schedule and speaker lineup when unlocked.
           </p>
 
-          <form onSubmit={handleNotifySubmit} className="flex gap-2">
+          <form onSubmit={handleNotifySubmit} className="flex flex-col sm:flex-row gap-2">
             <input
               type="email"
               required
               placeholder="developer@jecjabalpur.ac.in"
               value={notifyEmail}
               onChange={(e) => setNotifyEmail(e.target.value)}
-              className="flex-1 px-3 py-2 text-xs font-mono bg-black border border-white/15 rounded-md text-white focus:outline-none focus:border-white transition-colors"
+              className="flex-1 px-3 py-2.5 sm:py-2 text-xs font-mono bg-black border border-white/15 rounded-md text-white focus:outline-none focus:border-white transition-colors min-h-[40px]"
             />
             <button
               type="submit"
-              className="px-4 py-2 text-xs font-mono font-semibold bg-white text-black hover:bg-neutral-200 rounded-md transition-colors whitespace-nowrap cursor-pointer"
+              className="px-4 py-2.5 sm:py-2 text-xs font-mono font-semibold bg-white text-black hover:bg-neutral-200 rounded-md transition-colors whitespace-nowrap cursor-pointer min-h-[40px]"
             >
               NOTIFY ME
             </button>

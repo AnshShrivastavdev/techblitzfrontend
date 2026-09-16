@@ -96,8 +96,8 @@ export function VideoPreloader({
       <div className="absolute inset-0 pointer-events-none z-[1] bg-[radial-gradient(circle_at_50%_50%,rgba(0,0,0,0)_50%,rgba(0,0,0,0.75)_100%)]" />
 
       {/* Top HUD Bar */}
-      <header className="relative z-10 w-full p-6 sm:p-10 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <header className="relative z-10 w-full p-4 sm:p-10 flex items-center justify-between">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           <div className="w-8 h-8 rounded border border-white/30 bg-black/60 backdrop-blur flex items-center justify-center text-xs font-mono font-bold text-white shadow-[0_0_15px_rgba(255,255,255,0.3)]">
             CJ
           </div>
@@ -105,18 +105,18 @@ export function VideoPreloader({
             <span className="text-xs sm:text-sm font-mono font-bold tracking-wider text-white drop-shadow">
               COSMOS // JEC
             </span>
-            <span className="text-[10px] font-mono tracking-widest text-neutral-400">
+            <span className="text-[9px] sm:text-[10px] font-mono tracking-widest text-neutral-400">
               TECHBLITZ '26 PRELOADER
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Audio Mute/Unmute Toggle */}
           <button
             type="button"
             onClick={() => setIsMuted(!isMuted)}
-            className="px-3 py-1.5 rounded-full border border-white/20 bg-black/60 hover:bg-white/10 hover:border-white/50 text-neutral-300 hover:text-white transition-all backdrop-blur flex items-center gap-1.5 text-xs font-mono cursor-pointer"
+            className="px-2.5 sm:px-3 py-1.5 min-h-[38px] rounded-full border border-white/20 bg-black/60 hover:bg-white/10 hover:border-white/50 text-neutral-300 hover:text-white transition-all backdrop-blur flex items-center gap-1.5 text-xs font-mono cursor-pointer"
             title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
           >
             {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
@@ -127,9 +127,9 @@ export function VideoPreloader({
           <button
             type="button"
             onClick={dismissPreloader}
-            className="px-4 py-1.5 rounded-full border border-white/30 bg-white/10 hover:bg-white text-white hover:text-black transition-all backdrop-blur font-mono text-xs font-bold tracking-wider flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(255,255,255,0.25)] hover:shadow-[0_0_20px_rgba(255,255,255,0.6)]"
+            className="px-3.5 sm:px-4 py-1.5 min-h-[38px] rounded-full border border-white/30 bg-white/10 hover:bg-white text-white hover:text-black transition-all backdrop-blur font-mono text-xs font-bold tracking-wider flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(255,255,255,0.25)] hover:shadow-[0_0_20px_rgba(255,255,255,0.6)]"
           >
-            <span>SKIP INTRO</span>
+            <span>SKIP</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -137,26 +137,26 @@ export function VideoPreloader({
 
       {/* Center Cinematic Title */}
       <div className="relative z-10 text-center px-4 max-w-2xl mx-auto my-auto">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/20 bg-black/70 backdrop-blur text-[11px] font-mono tracking-[0.25em] text-cyan-300 mb-4 shadow-[0_0_20px_rgba(56,189,248,0.3)]">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/20 bg-black/70 backdrop-blur text-[10px] sm:text-[11px] font-mono tracking-[0.2em] sm:tracking-[0.25em] text-cyan-300 mb-3 sm:mb-4 shadow-[0_0_20px_rgba(56,189,248,0.3)]">
           <Sparkles className="w-3 h-3 text-cyan-400 animate-pulse" />
           <span>MISSION INITIATION SEQUENCE</span>
         </div>
-        <h1 className="text-3xl sm:text-5xl md:text-6xl font-black font-mono tracking-tight text-white drop-shadow-[0_10px_25px_rgba(0,0,0,0.9)] uppercase">
+        <h1 className="text-2xl sm:text-5xl md:text-6xl font-black font-mono tracking-tight text-white drop-shadow-[0_10px_25px_rgba(0,0,0,0.9)] uppercase">
           TECHBLITZ '26
         </h1>
-        <p className="text-xs sm:text-sm font-mono text-neutral-300 tracking-wider mt-2 drop-shadow">
+        <p className="text-[11px] sm:text-sm font-mono text-neutral-300 tracking-wider mt-2 drop-shadow">
           JABALPUR ENGINEERING COLLEGE • DEPT OF CSE
         </p>
       </div>
 
       {/* Bottom Progress HUD */}
-      <footer className="relative z-10 w-full p-6 sm:p-10 max-w-4xl mx-auto flex flex-col gap-2">
-        <div className="flex items-center justify-between text-xs font-mono tracking-wider text-neutral-300">
+      <footer className="relative z-10 w-full p-4 sm:p-10 max-w-4xl mx-auto flex flex-col gap-2">
+        <div className="flex items-center justify-between text-[11px] sm:text-xs font-mono tracking-wider text-neutral-300">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-            <span className="text-white font-bold">INITIALIZING SYSTEM TELEMETRY</span>
+            <span className="text-white font-bold truncate">SYSTEM TELEMETRY</span>
           </div>
-          <div className="text-white font-mono font-bold text-sm">
+          <div className="text-white font-mono font-bold text-xs sm:text-sm">
             {progress}%
           </div>
         </div>
@@ -169,9 +169,9 @@ export function VideoPreloader({
           />
         </div>
 
-        <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400 tracking-widest uppercase mt-1">
-          <span>ORBITAL TRAJECTORY CALIBRATION</span>
-          <span>PRESS ESC TO ENTER</span>
+        <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-mono text-neutral-400 tracking-widest uppercase mt-1">
+          <span>TRAJECTORY CALIBRATION</span>
+          <span className="hidden sm:inline">PRESS ESC TO ENTER</span>
         </div>
       </footer>
     </div>

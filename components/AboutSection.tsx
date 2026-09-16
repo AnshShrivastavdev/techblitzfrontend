@@ -29,16 +29,16 @@ const SCHEDULE_ITEMS = [
 
 export function AboutSection() {
   return (
-    <section id="about" className="py-24 border-t border-white/10 bg-neutral-950/40">
-      <div className="max-w-7xl mx-auto px-6 sm:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+    <section id="about" className="py-16 sm:py-24 border-t border-white/10 bg-neutral-950/40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
           {/* Left Column: Guild Vision & Mission */}
           <div>
             <div className="flex items-center gap-2 text-xs font-mono tracking-widest text-neutral-400 mb-2">
               <span className="w-1.5 h-1.5 rounded-full bg-white pulse-white-dot" />
               <span>GUILD ORIGINS // EST. JEC</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-6 font-mono">
+            <h2 className="text-2xl sm:text-4xl font-bold tracking-tight text-white mb-4 sm:mb-6 font-mono">
               About TechBlitz & Cosmos JEC
             </h2>
             <div className="space-y-4 text-neutral-300 text-sm sm:text-base leading-relaxed">
@@ -60,17 +60,17 @@ export function AboutSection() {
             </div>
 
             {/* Quick Metadata Badges */}
-            <div className="mt-8 pt-6 border-t border-white/10 flex flex-wrap gap-6 text-xs font-mono text-neutral-400">
+            <div className="mt-6 sm:mt-8 pt-6 border-t border-white/10 flex flex-wrap gap-4 sm:gap-6 text-xs font-mono text-neutral-400">
               <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-white" />
+                <MapPin className="w-4 h-4 text-white shrink-0" />
                 <span>Jabalpur Engineering College, MP, India</span>
               </div>
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-white" />
+                <Calendar className="w-4 h-4 text-white shrink-0" />
                 <span>March 27 – 29, 2026</span>
               </div>
               <div className="flex items-center gap-2">
-                <Award className="w-4 h-4 text-white" />
+                <Award className="w-4 h-4 text-white shrink-0" />
                 <span>Official JEC Certified</span>
               </div>
             </div>
@@ -82,7 +82,7 @@ export function AboutSection() {
               <span className="text-xs font-mono tracking-widest text-neutral-400 uppercase">
                 EVENT SCHEDULE TIMELINE
               </span>
-              <span className="text-[11px] font-mono text-neutral-500">
+              <span className="text-[10px] sm:text-[11px] font-mono text-neutral-500">
                 TIMEZONE: IST (UTC+5:30)
               </span>
             </div>
@@ -90,9 +90,9 @@ export function AboutSection() {
             {SCHEDULE_ITEMS.map((item, idx) => (
               <div
                 key={idx}
-                className="p-5 rounded-lg border border-white/10 bg-black/70 backdrop-blur hover:border-white/25 transition-all group"
+                className="p-4 sm:p-5 rounded-lg border border-white/10 bg-black/70 backdrop-blur hover:border-white/25 transition-all group"
               >
-                <div className="flex items-center justify-between text-xs font-mono tracking-wider mb-2">
+                <div className="flex flex-wrap items-center justify-between text-xs font-mono tracking-wider mb-2 gap-1">
                   <span className="text-white font-bold group-hover:text-neutral-200">
                     {item.day} • {item.date}
                   </span>

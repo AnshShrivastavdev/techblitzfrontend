@@ -51,18 +51,18 @@ export function FaqSection() {
   };
 
   return (
-    <section id="faq" className="py-24 border-t border-white/10 bg-black">
-      <div className="max-w-4xl mx-auto px-6 sm:px-8">
+    <section id="faq" className="py-16 sm:py-24 border-t border-white/10 bg-black">
+      <div className="max-w-4xl mx-auto px-4 sm:px-8">
         {/* Section Header */}
-        <div className="mb-14 text-center">
+        <div className="mb-10 sm:mb-14 text-center">
           <div className="inline-flex items-center gap-2 text-xs font-mono tracking-widest text-neutral-400 mb-2">
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
             <span>KNOWLEDGE BASE // FAQ</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4 font-mono">
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight text-white mb-3 sm:mb-4 font-mono">
             Frequently Asked Questions
           </h2>
-          <p className="text-neutral-400 text-sm sm:text-base max-w-xl mx-auto">
+          <p className="text-neutral-400 text-xs sm:text-base max-w-xl mx-auto">
             Essential information regarding eligibility, prerequisites, credentials, and team rules for TechBlitz 2026.
           </p>
         </div>
@@ -73,22 +73,22 @@ export function FaqSection() {
             const isOpen = activeFaq === idx;
 
             return (
-              <div key={idx} className="py-5 transition-colors">
+              <div key={idx} className="py-4 sm:py-5 transition-colors">
                 <button
                   type="button"
                   onClick={() => toggleFaq(idx)}
-                  className="w-full flex items-center justify-between gap-4 font-semibold text-left text-white hover:text-neutral-200 transition-colors cursor-pointer group"
+                  className="w-full flex items-center justify-between gap-3 sm:gap-4 font-semibold text-left text-white hover:text-neutral-200 transition-colors cursor-pointer group min-h-[44px]"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                    <span className="text-[10px] font-mono tracking-widest px-2 py-0.5 rounded bg-white/10 text-neutral-300 border border-white/15 w-fit">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
+                    <span className="text-[9px] sm:text-[10px] font-mono tracking-widest px-2 py-0.5 rounded bg-white/10 text-neutral-300 border border-white/15 w-fit">
                       {item.category}
                     </span>
-                    <span className="text-sm sm:text-base font-mono text-white group-hover:text-neutral-200">
+                    <span className="text-xs sm:text-base font-mono text-white group-hover:text-neutral-200">
                       {item.question}
                     </span>
                   </div>
                   <ChevronDown
-                    className={`w-5 h-5 text-neutral-400 transition-transform duration-300 flex-shrink-0 ${
+                    className={`w-4 h-4 sm:w-5 sm:h-5 text-neutral-400 transition-transform duration-300 flex-shrink-0 ${
                       isOpen ? 'rotate-180 text-white' : ''
                     }`}
                   />
