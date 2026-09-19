@@ -3,9 +3,10 @@
 import React from 'react';
 import { VideoPreloader } from '@/components/VideoPreloader';
 import { Navbar } from '@/components/Navbar';
-import { CanvasScroller } from '@/components/CanvasScroller';
+import { CanvasStoryScroll } from '@/components/3d/CanvasStoryScroll';
 import { CompanyMarquee } from '@/components/CompanyMarquee';
 import { AboutSection } from '@/components/AboutSection';
+import { EventZonesSection } from '@/components/EventZonesSection';
 import { SpeakersSection } from '@/components/SpeakersSection';
 import { GallerySection } from '@/components/GallerySection';
 import { FaqSection } from '@/components/FaqSection';
@@ -13,25 +14,34 @@ import { Footer } from '@/components/Footer';
 
 export default function Home() {
   return (
-    <main className="relative min-h-screen bg-black text-white selection:bg-white selection:text-black">
-      {/* Full Cinematic Video Preloader (VN20260913_031443.mp4) */}
+    <div className="relative min-h-screen bg-black text-white selection:bg-white selection:text-black">
+      {/* Full Cinematic Video Preloader */}
       <VideoPreloader videoSrc="/preloader.mp4" />
 
-      {/* Fixed Sci-Fi Header with Login & Sign Up buttons */}
+      {/* =====================================================================
+          LAYER 40: FIXED NAVIGATION HEADER (pointer-events-auto)
+          ===================================================================== */}
       <Navbar />
 
-      {/* 3D Canvas Scroller Hero */}
-      <section className="relative z-10">
-        <CanvasScroller />
-      </section>
+      {/* =====================================================================
+          LAYER 0 (BACKGROUND CANVAS), LAYER 10 (HUD OVERLAY), LAYER 1 (SCROLL TRACK)
+          Decoupled, centralized 3D scroll-driven storytelling experience
+          ===================================================================== */}
+      <CanvasStoryScroll />
 
-      {/* Content sections below Canvas Scroller */}
-      <div className="relative z-20 bg-black">
+      {/* =====================================================================
+          LAYER 20: INTERACTIVE CONTENT LAYER (pointer-events-auto)
+          Subsequent sections rendering over black background
+          ===================================================================== */}
+      <main className="relative z-20 bg-black pointer-events-auto">
         {/* Horizontal Floating Logo Marquee: Companies of Alumni Mentors */}
         <CompanyMarquee />
 
         {/* About Section (#about) */}
         <AboutSection />
+
+        {/* Event Zones 3-Column Grid (#zones) */}
+        <EventZonesSection />
 
         {/* Speakers Section (#speakers) */}
         <SpeakersSection />
@@ -39,12 +49,12 @@ export default function Home() {
         {/* Gallery Section (#gallery) */}
         <GallerySection />
 
-        {/* FAQ Section (#faq) */}
+        {/* FAQ Accessible Accordion (#faq) */}
         <FaqSection />
 
         {/* Footer */}
         <Footer />
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

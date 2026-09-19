@@ -11,6 +11,7 @@ html {
   background-color: #000000;
   color: #ededed;
   width: 100%;
+  min-height: 100vh;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -18,8 +19,31 @@ body {
   background-color: #000000;
   color: #ededed;
   width: 100%;
-  overflow-x: clip;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: visible;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+#__next,
+#root {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+}
+
+/* Explicit container height ensuring sticky behaves properly across mobile & desktop */
+.canvas-scroller-container,
+.canvas-story-container {
+  position: relative;
+  width: 100%;
+  height: 1200vh;
+}
+@media (min-width: 640px) {
+  .canvas-scroller-container,
+  .canvas-story-container {
+    height: 1500vh;
+  }
 }
 
 /* Custom Minimalist Scrollbar */

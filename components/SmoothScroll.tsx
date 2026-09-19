@@ -13,6 +13,8 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
       syncTouch: false,
     });
 
+    (window as any).__lenis = lenis;
+
     let animationFrameId: number;
     function raf(time: number) {
       lenis.raf(time);
@@ -23,6 +25,7 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
     return () => {
       cancelAnimationFrame(animationFrameId);
       lenis.destroy();
+      delete (window as any).__lenis;
     };
   }, []);
 

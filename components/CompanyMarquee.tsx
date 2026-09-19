@@ -68,24 +68,24 @@ export const COMPANY_LOGOS: CompanyLogo[] = [
 
 export function CompanyMarquee() {
   return (
-    <section className="py-20 bg-black border-y border-white/10 relative overflow-hidden select-none">
+    <section className="py-24 sm:py-32 bg-black border-y border-white/10 relative overflow-hidden select-none">
       {/* Background ambient lighting */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.03),transparent_70%)]" />
 
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 mb-10 text-center">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 mb-14 sm:mb-18 text-center">
         {/* Aerospace Telemetry Pill */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/20 bg-white/5 text-neutral-300 text-xs font-mono tracking-widest mb-3">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-white/20 bg-white/5 text-neutral-300 text-xs font-mono tracking-widest mb-3.5">
           <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
           <span>ALUMNI NETWORK // WORKSHOP DIRECTORS</span>
         </div>
 
         {/* Section Headline */}
-        <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold font-mono tracking-tight text-white mb-3">
+        <h3 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-mono tracking-tight text-white mb-4">
           Workshops Led by Industry Alumni
         </h3>
 
         {/* Subtitle explaining the alumni connection */}
-        <p className="text-xs sm:text-sm text-neutral-400 font-mono max-w-2xl mx-auto leading-relaxed">
+        <p className="text-xs sm:text-base text-neutral-400 font-mono max-w-2xl mx-auto leading-relaxed">
           Hands-on technical tracks and guided engineering sprints conducted by JEC & Cosmos alumni currently building at world-class technology enterprises and research organizations.
         </p>
       </div>

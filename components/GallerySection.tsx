@@ -1,17 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Camera, Image as ImageIcon, Sparkles, Satellite } from 'lucide-react';
+import { Camera } from 'lucide-react';
 
-interface GalleryCard {
-  sector: string;
-  tag: string;
-  title: string;
-  desc: string;
-  badge: string;
-}
-
-const GALLERY_CARDS: GalleryCard[] = [
+const GALLERY_CARDS = [
   {
     sector: 'SECTOR 01',
     tag: 'PAST EVENT // 2025 HACKATHON',
@@ -58,53 +50,56 @@ const GALLERY_CARDS: GalleryCard[] = [
 
 export function GallerySection() {
   return (
-    <section id="gallery" className="py-16 sm:py-24 border-t border-white/10 bg-black">
-      <div className="max-w-7xl mx-auto px-4 sm:px-8">
-        {/* Header */}
-        <div className="mb-10 sm:mb-14">
-          <div className="flex items-center gap-2 text-xs font-mono tracking-widest text-neutral-400 mb-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+    <section id="gallery" className="py-24 sm:py-32 border-t border-white/10 bg-black relative overflow-hidden">
+      {/* Ambient background glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-cyan-500/5 blur-[140px] pointer-events-none rounded-full" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10">
+        {/* Centralized Section Header */}
+        <div className="mb-16 sm:mb-20 text-center max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-cyan-400/30 bg-cyan-950/20 text-cyan-300 text-xs font-mono tracking-widest mb-3.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
             <span>ARCHIVAL LOGS // PHOTO STREAM</span>
           </div>
-          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight text-white mb-3 sm:mb-4 font-mono">
+          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black font-sans tracking-tight text-white mb-5 uppercase leading-tight">
             Event Gallery & Visual Archives
           </h2>
-          <p className="text-neutral-400 max-w-2xl text-xs sm:text-base">
+          <p className="text-neutral-400 text-xs sm:text-base leading-relaxed max-w-2xl mx-auto">
             Glimpses into past symposiums, competitive robotics bouts, deep space skywatches, and upcoming
-            TechBlitz event zones.
+            TechBlitz 2026 collegiate zones.
           </p>
         </div>
 
-        {/* Grid of gallery cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+        {/* Spacious Grid of gallery cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {GALLERY_CARDS.map((card, idx) => (
             <div
               key={idx}
-              className="rounded-xl border border-white/10 bg-neutral-950/80 p-4 sm:p-6 flex flex-col justify-between hover:border-white/30 transition-all duration-300 group backdrop-blur-md"
+              className="rounded-2xl border border-white/10 bg-neutral-950/80 p-6 sm:p-7 flex flex-col justify-between hover:border-cyan-400/40 transition-all duration-300 group backdrop-blur-md shadow-xl"
             >
               <div>
                 {/* Top Telemetry Header */}
-                <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono text-neutral-500 mb-3 sm:mb-4 pb-2 border-b border-white/10">
-                  <span className="text-neutral-400 font-semibold">{card.tag}</span>
+                <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono text-neutral-400 mb-4 pb-3 border-b border-white/10">
+                  <span className="text-cyan-300 font-semibold">{card.tag}</span>
                   <span className="text-[10px] text-neutral-500">{card.sector}</span>
                 </div>
 
                 {/* Minimalist Image Placeholder Frame */}
-                <div className="h-36 sm:h-44 rounded-lg bg-neutral-900/50 border border-dashed border-white/15 flex flex-col items-center justify-center text-neutral-500 mb-4 sm:mb-5 group-hover:border-white/30 transition-colors relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
+                <div className="h-44 sm:h-52 rounded-xl bg-neutral-900/60 border border-dashed border-white/20 flex flex-col items-center justify-center text-neutral-500 mb-5 group-hover:border-cyan-400/40 transition-colors relative overflow-hidden shadow-inner">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
                   
-                  <div className="w-12 h-12 rounded-full border border-white/10 bg-neutral-950 flex items-center justify-center mb-3 group-hover:border-white/30 transition-colors">
-                    <Camera className="w-5 h-5 text-neutral-400 group-hover:text-white transition-colors" />
+                  <div className="w-14 h-14 rounded-full border border-white/15 bg-neutral-950/90 flex items-center justify-center mb-3 group-hover:border-cyan-400/50 group-hover:scale-105 transition-all shadow-md">
+                    <Camera className="w-6 h-6 text-neutral-400 group-hover:text-cyan-300 transition-colors" />
                   </div>
 
                   {/* "To Be Announced / Unlocking Soon" Glowing Badge */}
-                  <div className="relative px-3 py-1 bg-black/90 border border-white/30 rounded-full text-[10px] font-mono font-bold tracking-wider text-white shadow-[0_0_12px_rgba(255,255,255,0.3)] flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  <div className="relative px-3.5 py-1 bg-black/95 border border-cyan-400/40 rounded-full text-[10px] font-mono font-bold tracking-wider text-cyan-300 shadow-[0_0_15px_rgba(56,189,248,0.25)] flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
                     <span>{card.badge}</span>
                   </div>
                 </div>
 
-                <h4 className="text-base font-bold text-white mb-2 font-mono group-hover:text-neutral-100 transition-colors">
+                <h4 className="text-base sm:text-lg font-bold text-white mb-2 font-mono group-hover:text-cyan-200 transition-colors">
                   {card.title}
                 </h4>
                 <p className="text-xs text-neutral-400 leading-relaxed">
@@ -112,10 +107,9 @@ export function GallerySection() {
                 </p>
               </div>
 
-              {/* Bottom HUD bar */}
-              <div className="mt-5 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-neutral-500">
-                <span>COSMOS JEC PHOTO LOG</span>
-                <span>LAT 23.2104° N</span>
+              <div className="mt-6 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-neutral-500 uppercase tracking-wider">
+                <span>SECURITY LEVEL: OPEN</span>
+                <span className="text-cyan-400/80">ACCESS 2026</span>
               </div>
             </div>
           ))}

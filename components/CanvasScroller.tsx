@@ -430,16 +430,20 @@ export function CanvasScroller() {
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+    const lenisInstance = (window as any).__lenis;
+    if (lenisInstance) {
+      lenisInstance.on('scroll', handleScroll);
+    }
     handleScroll();
 
     let isRunning = true;
     const tick = () => {
       if (!isRunning) return;
 
-      // Smooth lerp towards target scroll position for 60-120fps fluid scrubbing
+      // Ultra-snappy lerp towards target scroll position for 60-120fps fluid scrubbing
       const diff = targetProgressRef.current - currentProgressRef.current;
       if (Math.abs(diff) > 0.00005) {
-        currentProgressRef.current += diff * 0.18;
+        currentProgressRef.current += diff * 0.35;
         renderFrameAtProgress(currentProgressRef.current);
       } else if (currentProgressRef.current !== targetProgressRef.current) {
         currentProgressRef.current = targetProgressRef.current;
@@ -454,6 +458,9 @@ export function CanvasScroller() {
     return () => {
       isRunning = false;
       window.removeEventListener('scroll', handleScroll);
+      if (lenisInstance) {
+        lenisInstance.off('scroll', handleScroll);
+      }
       if (rafIdRef.current) {
         cancelAnimationFrame(rafIdRef.current);
       }
@@ -464,67 +471,30 @@ export function CanvasScroller() {
 
   return (
     <div className="relative w-full bg-black text-white selection:bg-white selection:text-black">
-      {/* 1. MINIMAL BLACK-AND-WHITE LOADING PERCENTAGE SCREEN */}
-      {!isLoaded && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black select-none pointer-events-auto"
-        >
-          <div className="flex flex-col items-center max-w-md w-full px-6">
-            {/* Top Aerospace/Tech Tag */}
-            <div className="flex items-center gap-2 mb-8">
-              <span className="w-2 h-2 bg-white rounded-full animate-ping" />
-              <span className="font-mono text-xs uppercase tracking-[0.25em] text-neutral-400">
-                TECHBLITZ // SYSTEM INITIALIZATION
-              </span>
-            </div>
 
-            {/* Large High-Contrast Percentage Counter */}
-            <div className="text-6xl sm:text-8xl font-black font-mono tracking-tighter text-white">
-              {loadPercent}%
-            </div>
-
-            {/* Minimalist 2px White Progress Bar */}
-            <div className="w-full h-[2px] bg-neutral-900 border border-neutral-800 my-6 sm:my-8 overflow-hidden">
-              <div
-                className="h-full bg-white transition-all duration-75 ease-out"
-                style={{ width: `${loadPercent}%` }}
-              />
-            </div>
-
-            {/* Monospace Telemetry Subtext */}
-            <div className="w-full flex justify-between font-mono text-[10px] sm:text-[11px] text-neutral-500 tracking-wider">
-              <span>FRAMES BUFFERED</span>
-              <span className="text-neutral-300">
-                {Math.round((loadPercent / 100) * TOTAL_FRAMES)} / {TOTAL_FRAMES}
-              </span>
-            </div>
-            <div className="w-full flex justify-between font-mono text-[10px] sm:text-[11px] text-neutral-500 tracking-wider mt-1">
-              <span>TELEMETRY STATUS</span>
-              <span className="text-white">
-                {loadPercent === 100 ? 'READY TO ENGAGE' : 'DECODING HIGH-RES ASSETS...'}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 2. SCROLL CONTAINER (1200vh on mobile, 1500vh on sm/desktop) */}
       <div
         ref={containerRef}
-        className="relative w-full h-[1200vh] sm:h-[1500vh]"
+        className="canvas-scroller-container relative w-full h-[1200vh] sm:h-[1500vh]"
+        style={{ minHeight: '1200vh', height: '1200vh' }}
       >
         {/* Sticky Full-Screen Canvas Container */}
-        <div className="sticky top-0 left-0 w-full h-screen h-[100dvh] overflow-hidden pointer-events-none">
+        <div
+          className="sticky top-0 left-0 w-full h-screen h-[100dvh] overflow-hidden pointer-events-none"
+          style={{ position: 'sticky', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none' }}
+        >
           <canvas
             ref={canvasRef}
             className="w-full h-full block bg-black pointer-events-none"
+            style={{ width: '100%', height: '100%', display: 'block', pointerEvents: 'none' }}
           />
 
           {/* Subtle Film Grain Vignette for contrast */}
           <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/80 via-transparent to-black/40" />
 
           {/* 3. LEFT-ALIGNED HIGH-CONTRAST B&W FROSTED TEXT BOX */}
-          <div className="absolute left-3 right-3 sm:right-auto sm:left-12 lg:left-16 bottom-4 sm:bottom-16 max-w-md w-auto z-20 pointer-events-auto">
+          <div className="absolute left-3 right-3 sm:right-auto sm:left-12 lg:left-16 bottom-4 sm:bottom-16 max-w-md w-auto z-20 pointer-events-none">
             <div className="bg-black/80 backdrop-blur-2xl border border-white/20 p-4 sm:p-8 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.9)] border-l-4 border-l-white transition-all duration-300">
               {/* Scene Tag and Subtitle */}
               <div className="flex flex-wrap items-center gap-2 mb-2 sm:mb-3">
