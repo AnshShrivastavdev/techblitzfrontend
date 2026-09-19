@@ -184,8 +184,8 @@ export function PcHeroSection() {
       const direct = frames[clamped];
       if (direct && direct.complete && direct.naturalWidth > 0) return direct;
 
-      // Nearest frame search outward
-      for (let offset = 1; offset < 30; offset++) {
+      // Nearest frame search outward across the entire chapter
+      for (let offset = 1; offset < count; offset++) {
         const prev = frames[clamped - offset];
         if (prev && prev.complete && prev.naturalWidth > 0) return prev;
         const next = frames[clamped + offset];
@@ -426,6 +426,10 @@ export function PcHeroSection() {
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+    const lenisInstance = typeof window !== 'undefined' ? window.__lenis : null;
+    if (lenisInstance) {
+      lenisInstance.on('scroll', handleScroll);
+    }
     handleScroll();
 
     let isRunning = true;
@@ -449,6 +453,9 @@ export function PcHeroSection() {
     return () => {
       isRunning = false;
       window.removeEventListener('scroll', handleScroll);
+      if (lenisInstance) {
+        lenisInstance.off('scroll', handleScroll);
+      }
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
   }, [renderFrameAtProgress]);

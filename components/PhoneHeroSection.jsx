@@ -86,21 +86,72 @@ export function PhoneHeroSection() {
     ctx.restore();
   }, []);
 
-  // Proximity preloader: buffer frames around current frame
-  const ensureFramesNearby = useCallback(
-    (frameIdx) => {
-      const start = Math.max(0, frameIdx - 6);
-      const end = Math.min(MOBILE_FRAME_COUNT - 1, frameIdx + 20);
+  // Frame renderer for a specific normalized progress (0.0 to 1.0)
+  const renderFrameAtProgress = useCallback(
+    (progress) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-      for (let f = start; f <= end; f++) {
+      const clamped = Math.max(0, Math.min(progress, 0.999999));
+      const targetFrame = Math.min(
+        MOBILE_FRAME_COUNT - 1,
+        Math.max(0, Math.floor(clamped * MOBILE_FRAME_COUNT))
+      );
+
+      const frameNumber = targetFrame + 1;
+      const pct = Math.round(clamped * 100);
+
+      // Determine active chapter (0-33%, 33-66%, 66-100%)
+      let chapterIdx = 0;
+      if (clamped >= 0.66) {
+        chapterIdx = 2;
+      } else if (clamped >= 0.33) {
+        chapterIdx = 1;
+      }
+
+      setActiveChapterIndex(chapterIdx);
+      setScrubPercent(pct);
+      setCurrentFrameNum(frameNumber);
+
+      // Proactively stream adjacent frames
+      const bufferStart = Math.max(0, targetFrame - 8);
+      const bufferEnd = Math.min(MOBILE_FRAME_COUNT - 1, targetFrame + 25);
+      for (let f = bufferStart; f <= bufferEnd; f++) {
         if (!framesRef.current[f]) {
-          const img = new Image();
-          img.src = getFrameUrl(f);
-          framesRef.current[f] = img;
+          const preloadImg = new Image();
+          preloadImg.src = getFrameUrl(f);
+          framesRef.current[f] = preloadImg;
         }
       }
+
+      // Get frame image with exhaustive outward search across the entire array
+      let img = framesRef.current[targetFrame];
+      if (!img || !img.complete || img.naturalWidth === 0) {
+        for (let offset = 1; offset < MOBILE_FRAME_COUNT; offset++) {
+          const prev = framesRef.current[targetFrame - offset];
+          if (prev && prev.complete && prev.naturalWidth > 0) {
+            img = prev;
+            break;
+          }
+          const next = framesRef.current[targetFrame + offset];
+          if (next && next.complete && next.naturalWidth > 0) {
+            img = next;
+            break;
+          }
+        }
+      }
+
+      const drawImg = img || lastDrawnImageRef.current;
+      if (drawImg && drawImg.complete && drawImg.naturalWidth > 0) {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        drawCoverImage(ctx, drawImg, canvas.width, canvas.height);
+        lastDrawnImageRef.current = drawImg;
+      }
     },
-    [getFrameUrl]
+    [drawCoverImage, getFrameUrl]
   );
 
   // Frame Preloader: monochrome progress, only fetches mobile frames
@@ -109,8 +160,11 @@ export function PhoneHeroSection() {
     let loadedCount = 0;
     const totalFrames = MOBILE_FRAME_COUNT;
 
-    // Phase 1: Load initial keyframes immediately for instant paint
-    const initialKeyframes = [0, 1, 2, 3, 4, 10, 20, 50, 100, 150, 200, 250, 299];
+    // Phase 1: Load essential keyframes across all chapters immediately
+    const initialKeyframes = [
+      0, 1, 2, 3, 4, 10, 20, 30, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 299,
+    ];
+
     initialKeyframes.forEach((f) => {
       if (!framesRef.current[f]) {
         const img = new Image();
@@ -123,6 +177,7 @@ export function PhoneHeroSection() {
           setLoadPercent((prev) => Math.max(prev, pct));
           if (f === 0 && !lastDrawnImageRef.current) {
             lastDrawnImageRef.current = img;
+            renderFrameAtProgress(0);
           }
         };
         img.onerror = () => {
@@ -131,27 +186,26 @@ export function PhoneHeroSection() {
       }
     });
 
-    // Simulated snappy initial progress bar (0% -> 100% within ~600ms)
+    // Fast initial unlock so user can scroll immediately without waiting
     let fakePct = 0;
     const progressInterval = setInterval(() => {
       if (!isMountedRef.current) return;
-      fakePct = Math.min(100, fakePct + Math.floor(Math.random() * 15 + 8));
+      fakePct = Math.min(100, fakePct + Math.floor(Math.random() * 20 + 10));
       setLoadPercent((prev) => Math.max(prev, fakePct));
       if (fakePct >= 100) {
         clearInterval(progressInterval);
         setIsLoaded(true);
       }
-    }, 40);
+    }, 35);
 
-    // Hard fallback: unlock within 700ms max so mobile user is never stuck
     const unlockTimeout = setTimeout(() => {
       if (isMountedRef.current) {
         setLoadPercent(100);
         setIsLoaded(true);
       }
-    }, 700);
+    }, 450);
 
-    // Phase 2: Stream remaining frames sequentially with controlled concurrency
+    // Phase 2: Stream remaining frames sequentially with high concurrency
     const queue = [];
     for (let f = 0; f < totalFrames; f++) {
       if (!framesRef.current[f]) {
@@ -160,7 +214,7 @@ export function PhoneHeroSection() {
     }
 
     let qIdx = 0;
-    const CONCURRENCY = 16;
+    const CONCURRENCY = 24;
 
     const loadWorker = () => {
       if (!isMountedRef.current || qIdx >= queue.length) return;
@@ -196,7 +250,7 @@ export function PhoneHeroSection() {
       isMountedRef.current = false;
       clearInterval(progressInterval);
       clearTimeout(unlockTimeout);
-      // Dereference images on unmount
+
       if (framesRef.current) {
         for (let i = 0; i < framesRef.current.length; i++) {
           if (framesRef.current[i]) {
@@ -207,68 +261,7 @@ export function PhoneHeroSection() {
         }
       }
     };
-  }, [getFrameUrl]);
-
-  // Frame renderer for a specific normalized progress (0.0 to 1.0)
-  const renderFrameAtProgress = useCallback(
-    (progress) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      const clamped = Math.max(0, Math.min(progress, 0.999999));
-      const targetFrame = Math.min(
-        MOBILE_FRAME_COUNT - 1,
-        Math.max(0, Math.floor(clamped * MOBILE_FRAME_COUNT))
-      );
-
-      const frameNumber = targetFrame + 1;
-      const pct = Math.round(clamped * 100);
-
-      // Determine active chapter (0-33%, 33-66%, 66-100%)
-      let chapterIdx = 0;
-      if (clamped >= 0.66) {
-        chapterIdx = 2;
-      } else if (clamped >= 0.33) {
-        chapterIdx = 1;
-      }
-
-      setActiveChapterIndex(chapterIdx);
-      setScrubPercent(pct);
-      setCurrentFrameNum(frameNumber);
-
-      // Proactively stream adjacent frames
-      ensureFramesNearby(targetFrame);
-
-      // Get frame image with safe fallback
-      let img = framesRef.current[targetFrame];
-      if (!img || !img.complete || img.naturalWidth === 0) {
-        // Nearest frame search
-        for (let offset = 1; offset < 20; offset++) {
-          const prev = framesRef.current[targetFrame - offset];
-          if (prev && prev.complete && prev.naturalWidth > 0) {
-            img = prev;
-            break;
-          }
-          const next = framesRef.current[targetFrame + offset];
-          if (next && next.complete && next.naturalWidth > 0) {
-            img = next;
-            break;
-          }
-        }
-      }
-
-      const drawImg = img || lastDrawnImageRef.current;
-      if (drawImg && drawImg.complete && drawImg.naturalWidth > 0) {
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        drawCoverImage(ctx, drawImg, canvas.width, canvas.height);
-        lastDrawnImageRef.current = drawImg;
-      }
-    },
-    [drawCoverImage, ensureFramesNearby]
-  );
+  }, [getFrameUrl, renderFrameAtProgress]);
 
   // Resize handler: DPR scaling and dynamic viewport updates
   useEffect(() => {
@@ -291,7 +284,7 @@ export function PhoneHeroSection() {
     return () => window.removeEventListener('resize', handleResize);
   }, [renderFrameAtProgress]);
 
-  // Scroll listener & 60fps RAF loop
+  // Dual Scroll listener: Native Window + Lenis Smooth Scroll
   useEffect(() => {
     const handleScroll = () => {
       if (!containerRef.current) return;
@@ -304,21 +297,28 @@ export function PhoneHeroSection() {
       targetProgressRef.current = progress;
 
       // Visibility toggle when scrolling into lower sections
-      const isPast = rect.bottom < window.innerHeight * 0.35;
+      const isPast = rect.bottom < window.innerHeight * 0.25;
       setIsHeroVisible(!isPast);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // Sync with global Lenis instance if available
+    const lenisInstance = typeof window !== 'undefined' ? window.__lenis : null;
+    if (lenisInstance) {
+      lenisInstance.on('scroll', handleScroll);
+    }
+
     handleScroll();
 
     let isRunning = true;
     const tick = () => {
       if (!isRunning) return;
 
-      // Snappy lerp towards target scroll
+      // Snappy and responsive lerping (0.4 factor for ultra-fluid scrubbing)
       const diff = targetProgressRef.current - currentProgressRef.current;
       if (Math.abs(diff) > 0.0001) {
-        currentProgressRef.current += diff * 0.35;
+        currentProgressRef.current += diff * 0.4;
         renderFrameAtProgress(currentProgressRef.current);
       } else if (currentProgressRef.current !== targetProgressRef.current) {
         currentProgressRef.current = targetProgressRef.current;
@@ -333,19 +333,37 @@ export function PhoneHeroSection() {
     return () => {
       isRunning = false;
       window.removeEventListener('scroll', handleScroll);
+      if (lenisInstance) {
+        lenisInstance.off('scroll', handleScroll);
+      }
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
   }, [renderFrameAtProgress]);
 
+  // Tap cue to advance scroll down smoothly
+  const handleScrollDown = () => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const scrollDistance = containerRef.current.offsetHeight - window.innerHeight;
+    const currentScrolled = -rect.top;
+
+    // Scroll down by 1 viewport height
+    const targetY = window.scrollY + Math.min(window.innerHeight * 0.9, scrollDistance - currentScrolled + 50);
+    window.scrollTo({
+      top: targetY,
+      behavior: 'smooth',
+    });
+  };
+
   const activeChapter = MOBILE_CHAPTERS[activeChapterIndex] || MOBILE_CHAPTERS[0];
 
   return (
-    <div className="relative w-full bg-black text-white selection:bg-white selection:text-black overflow-hidden">
+    <div className="relative w-full bg-black text-white selection:bg-white selection:text-black">
       {/* =====================================================================
           1. PRELOADER: SLEEK MONOCHROME SCREEN (0% to 100%)
           ===================================================================== */}
       {!isLoaded && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6 text-center select-none">
+        <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6 text-center select-none pointer-events-none">
           {/* Minimalist Cosmos Emblem */}
           <div className="w-12 h-12 mb-6 rounded-full border border-white/20 flex items-center justify-center">
             <span className="w-3 h-3 rounded-full bg-white animate-ping" />
@@ -374,24 +392,24 @@ export function PhoneHeroSection() {
       )}
 
       {/* =====================================================================
-          2. SCROLL RUNWAY: height: 280dvh
+          2. SCROLL RUNWAY: generous height: 380dvh to allow comfortable scrubbing
           ===================================================================== */}
       <div
         ref={containerRef}
         id="home"
-        className="canvas-mobile-scroller relative w-full h-[280dvh]"
-        style={{ minHeight: '280dvh', height: '280dvh' }}
+        className="canvas-mobile-scroller relative w-full h-[380dvh]"
+        style={{ minHeight: '380dvh', height: '380dvh' }}
       >
         {/* Sticky Full-Screen Canvas Container: height: 100dvh */}
         <div
           className="sticky top-0 left-0 w-full h-[100dvh] overflow-hidden pointer-events-none"
-          style={{ position: 'sticky', top: 0, left: 0, width: '100%', height: '100dvh' }}
+          style={{ position: 'sticky', top: 0, left: 0, width: '100%', height: '100dvh', pointerEvents: 'none' }}
         >
           {/* The 3D Render Canvas */}
           <canvas
             ref={canvasRef}
             className="w-full h-full block bg-black pointer-events-none"
-            style={{ width: '100%', height: '100%', display: 'block' }}
+            style={{ width: '100%', height: '100%', display: 'block', pointerEvents: 'none' }}
           />
 
           {/* Cinematic Vignette Overlay */}
@@ -406,24 +424,25 @@ export function PhoneHeroSection() {
             }`}
           >
             {/* TOP: Minimal "COSMOS JEC" Branding on top-left */}
-            <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20 pointer-events-auto">
-              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full">
+            <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20 pointer-events-none">
+              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full pointer-events-auto">
                 <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
                 <span className="text-xs font-mono font-bold tracking-wider text-white">
                   COSMOS <span className="text-neutral-400">JEC</span>
                 </span>
               </div>
 
-              <div className="bg-black/60 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded font-mono text-[10px] text-neutral-400 tracking-wider">
+              <div className="bg-black/60 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded font-mono text-[10px] text-neutral-400 tracking-wider pointer-events-auto">
                 FRAME <span className="text-white font-bold">{String(currentFrameNum).padStart(3, '0')}</span> / {MOBILE_FRAME_COUNT}
               </div>
             </div>
 
             {/* BOTTOM: Thumb-Friendly Story Card with Gradient Backdrop */}
-            <div className="absolute bottom-0 left-0 right-0 z-20 p-4 pb-6 pt-16 bg-gradient-to-t from-black via-black/85 to-transparent pointer-events-auto">
-              <div className="max-w-md mx-auto space-y-3">
+            {/* Set pointer-events-none on the gradient backdrop so touch gestures pass through to document scroll */}
+            <div className="absolute bottom-0 left-0 right-0 z-20 p-4 pb-6 pt-16 bg-gradient-to-t from-black via-black/85 to-transparent pointer-events-none">
+              <div className="max-w-md mx-auto space-y-3 pointer-events-none">
                 {/* Chapter Pill & Telemetry Scrub Status */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pointer-events-none">
                   <span className="inline-block bg-white text-black font-mono text-[10px] font-bold px-2 py-0.5 rounded tracking-widest uppercase">
                     {activeChapter.tag}
                   </span>
@@ -433,7 +452,7 @@ export function PhoneHeroSection() {
                 </div>
 
                 {/* Chapter Heading & Title */}
-                <div>
+                <div className="pointer-events-none">
                   <h2 className="text-xl font-black font-sans tracking-tight text-white uppercase leading-tight">
                     {activeChapter.title}
                   </h2>
@@ -443,20 +462,20 @@ export function PhoneHeroSection() {
                 </div>
 
                 {/* Chapter Narrative */}
-                <p className="text-xs text-neutral-300 leading-relaxed font-sans line-clamp-2">
+                <p className="text-xs text-neutral-300 leading-relaxed font-sans line-clamp-2 pointer-events-none">
                   {activeChapter.desc}
                 </p>
 
                 {/* Mini Scrub Progress Bar */}
-                <div className="w-full h-1 bg-white/15 rounded-full overflow-hidden">
+                <div className="w-full h-1 bg-white/15 rounded-full overflow-hidden pointer-events-none">
                   <div
                     className="h-full bg-white transition-all duration-75"
                     style={{ width: `${scrubPercent}%` }}
                   />
                 </div>
 
-                {/* High-Contrast Touch Action Buttons */}
-                <div className="flex items-center gap-3 pt-1">
+                {/* High-Contrast Touch Action Buttons - Explicitly pointer-events-auto */}
+                <div className="flex items-center gap-3 pt-1 pointer-events-auto">
                   <a
                     href="#register"
                     onClick={(e) => {
@@ -464,7 +483,7 @@ export function PhoneHeroSection() {
                       document.getElementById('register')?.scrollIntoView({ behavior: 'smooth' }) ||
                         (window.location.href = '/register');
                     }}
-                    className="flex-1 py-2.5 px-4 bg-white text-black font-mono font-bold text-xs uppercase text-center rounded-lg shadow-lg active:scale-95 transition-transform"
+                    className="flex-1 py-2.5 px-4 bg-white text-black font-mono font-bold text-xs uppercase text-center rounded-lg shadow-lg active:scale-95 transition-transform cursor-pointer"
                   >
                     Register Now
                   </a>
@@ -474,18 +493,22 @@ export function PhoneHeroSection() {
                       e.preventDefault();
                       document.getElementById('zones')?.scrollIntoView({ behavior: 'smooth' });
                     }}
-                    className="flex-1 py-2.5 px-4 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-mono font-bold text-xs uppercase text-center rounded-lg active:scale-95 transition-transform backdrop-blur-md"
+                    className="flex-1 py-2.5 px-4 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-mono font-bold text-xs uppercase text-center rounded-lg active:scale-95 transition-transform backdrop-blur-md cursor-pointer"
                   >
                     Tracks
                   </a>
                 </div>
 
-                {/* Micro-Cue: Swipe down to scrub frames */}
-                <div className="text-center pt-1">
-                  <span className="inline-flex items-center gap-1.5 font-mono text-[9px] text-neutral-400 tracking-widest uppercase animate-pulse">
+                {/* Micro-Cue: Swipe down or tap to scrub frames */}
+                <div className="text-center pt-1 pointer-events-auto">
+                  <button
+                    type="button"
+                    onClick={handleScrollDown}
+                    className="inline-flex items-center gap-1.5 font-mono text-[10px] text-neutral-400 hover:text-white tracking-widest uppercase animate-pulse cursor-pointer py-1 px-3 rounded-full hover:bg-white/5 transition-colors"
+                  >
                     <span>Swipe down to scrub frames</span>
-                    <span>↓</span>
-                  </span>
+                    <span className="text-white font-bold">↓</span>
+                  </button>
                 </div>
               </div>
             </div>
