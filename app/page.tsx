@@ -3,7 +3,7 @@
 import React from 'react';
 import { VideoPreloader } from '@/components/VideoPreloader';
 import { Navbar } from '@/components/Navbar';
-import { CanvasStoryScroll } from '@/components/3d/CanvasStoryScroll';
+import { HeroSection } from '@/components/HeroSection';
 import { CompanyMarquee } from '@/components/CompanyMarquee';
 import { AboutSection } from '@/components/AboutSection';
 import { EventZonesSection } from '@/components/EventZonesSection';
@@ -24,10 +24,11 @@ export default function Home() {
       <Navbar />
 
       {/* =====================================================================
-          LAYER 0 (BACKGROUND CANVAS), LAYER 10 (HUD OVERLAY), LAYER 1 (SCROLL TRACK)
-          Decoupled, centralized 3D scroll-driven storytelling experience
+          RESPONSIVE DUAL-ENGINE 3D CANVAS SCROLL STORYTELLING HERO SYSTEM
+          Desktop (>=768px): PcHeroSection.jsx (6 Sequential Chapters, 12% Crossfade)
+          Mobile (<768px):   PhoneHeroSection.jsx (Vertical 280dvh Runway, Center-crop)
           ===================================================================== */}
-      <CanvasStoryScroll />
+      <HeroSection />
 
       {/* =====================================================================
           LAYER 20: INTERACTIVE CONTENT LAYER (pointer-events-auto)
