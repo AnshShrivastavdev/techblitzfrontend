@@ -1,4 +1,11 @@
 import mongoose from 'mongoose';
+import dns from 'dns';
+
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch {
+  // Ignore in environments where setting DNS servers is restricted
+}
 
 export const getMongoUri = () => {
   let uri = process.env.MONGODB_URI;
