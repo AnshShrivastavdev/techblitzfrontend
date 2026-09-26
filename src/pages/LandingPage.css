@@ -1,0 +1,281 @@
+/* =====================================================
+   TechBlitz High-Tech Space-Science Design System
+   Cosmos // Jabalpur Engineering College
+   ===================================================== */
+
+.techblitz-page {
+  background-color: #000000;
+  color: #f3f4f6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Dedicated story container height ensuring sticky behaves properly */
+.canvas-story-container {
+  position: relative;
+  width: 100%;
+  height: 1200vh;
+}
+@media (min-width: 640px) {
+  .canvas-story-container {
+    height: 1500vh;
+  }
+}
+
+/* Monospace telemetry utility */
+.font-mono {
+  font-family: 'Space Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+}
+
+/* Minimalist borders & surfaces */
+.border-subtle {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.border-subtle-hover:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.bg-surface-dark {
+  background-color: #050508;
+}
+
+.bg-plate {
+  background-color: rgba(5, 5, 8, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Custom radial vignette */
+.bg-radial-vignette {
+  background: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.85) 100%);
+}
+
+/* Holographic foil shimmer */
+@keyframes holoShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.holo-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(56, 189, 248, 0.08) 50%, rgba(168, 85, 247, 0.05) 100%);
+  background-size: 200% 200%;
+  animation: holoShimmer 8s ease infinite;
+}
+
+/* Cyber card styling */
+.cyber-card {
+  background: #07070b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  position: relative;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.cyber-card:hover {
+  border-color: rgba(56, 189, 248, 0.5);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.15);
+}
+
+.cyber-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00f0ff, transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.cyber-card:hover::before {
+  opacity: 1;
+}
+
+/* HUD Crosshair brackets */
+.hud-corner-tl {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 8px;
+  height: 8px;
+  border-top: 1px solid rgba(56, 189, 248, 0.6);
+  border-left: 1px solid rgba(56, 189, 248, 0.6);
+  pointer-events: none;
+}
+
+.hud-corner-br {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.6);
+  border-right: 1px solid rgba(56, 189, 248, 0.6);
+  pointer-events: none;
+}
+
+/* Radar scanning line effect */
+@keyframes scanlineSweep {
+  0% {
+    top: -20%;
+  }
+  100% {
+    top: 120%;
+  }
+}
+
+.scanline-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(180deg, transparent, rgba(56, 189, 248, 0.08), transparent);
+  animation: scanlineSweep 4s linear infinite;
+  pointer-events: none;
+}
+
+/* Glowing text and borders */
+.glow-cyan-text {
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+}
+
+.glow-cyan-border {
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+}
+
+/* High contrast cyber button */
+.btn-cyber-primary {
+  background: #ffffff;
+  color: #000000;
+  font-weight: 700;
+  font-family: monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.btn-cyber-primary:hover {
+  background: #00f0ff;
+  color: #000000;
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.7);
+  transform: translateY(-2px);
+}
+
+.btn-cyber-outline {
+  background: transparent;
+  color: #e2e8f0;
+  font-family: monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  transition: all 0.25s ease;
+}
+
+.btn-cyber-outline:hover {
+  border-color: #00f0ff;
+  color: #00f0ff;
+  background: rgba(0, 240, 255, 0.08);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+}
+
+/* Pulse Glow Keyframes */
+@keyframes cyanPulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 10px #38bdf8;
+  }
+  50% {
+    opacity: 0.3;
+    box-shadow: 0 0 2px #38bdf8;
+  }
+}
+
+.pulse-cyan-dot {
+  animation: cyanPulse 2s infinite ease-in-out;
+}
+
+@keyframes pulse-white {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6);
+  }
+  50% {
+    opacity: 0.5;
+    box-shadow: 0 0 8px 2px rgba(255, 255, 255, 0.3);
+  }
+}
+
+.pulse-white-dot {
+  animation: pulse-white 2s infinite ease-in-out;
+}
+
+/* Company Marquee Infinite Ticker */
+@keyframes companyMarqueeScroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.company-marquee-track {
+  animation: companyMarqueeScroll 30s linear infinite;
+}
+
+/* =====================================================
+   MOBILE & TABLET RESPONSIVENESS MEDIA QUERIES
+   ===================================================== */
+
+@media (max-width: 768px) {
+  .techblitz-page {
+    font-size: 14px;
+  }
+
+  .cyber-card {
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .btn-cyber-primary,
+  .btn-cyber-outline {
+    font-size: 11px;
+    padding: 10px 14px;
+    min-height: 42px;
+  }
+
+  .hud-corner-tl,
+  .hud-corner-br {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cyber-card {
+    padding: 14px;
+  }
+
+  .btn-cyber-primary,
+  .btn-cyber-outline {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}
+

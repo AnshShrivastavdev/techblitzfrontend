@@ -1,0 +1,25 @@
+{
+  "name": "techblitz-server",
+  "version": "2.0.0",
+  "description": "Backend API for TechBlitz 2.0",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node src/seed/seed.js"
+  },
+  "dependencies": {
+    "@clerk/express": "^1.3.0",
+    "cors": "^2.8.5",
+    "csv-stringify": "^6.5.2",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "firebase-admin": "^14.5.0",
+    "helmet": "^8.0.0",
+    "mongoose": "^8.9.5",
+    "nodemailer": "^6.10.0",
+    "pdfkit": "^0.16.0"
+  }
+}
