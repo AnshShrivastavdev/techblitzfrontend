@@ -2,30 +2,7 @@
 
 import React from 'react';
 import { Sparkles } from 'lucide-react';
-
-const SCHEDULE_ITEMS = [
-  {
-    day: 'DAY 01',
-    date: 'MARCH 27, 2026',
-    title: 'Mission Genesis & Technical Keynotes',
-    time: '09:00 - 18:00 IST',
-    desc: 'Grand opening ceremony, symposium keynote address, live embedded hardware orientation, and kick-off for technical tracks 01 through 04.',
-  },
-  {
-    day: 'DAY 02',
-    date: 'MARCH 28, 2026',
-    title: '24-Hour Hackathon & Deep Lab Sprints',
-    time: '10:00 IST CONTINUOUS',
-    desc: 'Overnight systems build, satellite telemetry simulation, SLAM rover obstacle calibration, and round-the-clock mentorship.',
-  },
-  {
-    day: 'DAY 03',
-    date: 'MARCH 29, 2026',
-    title: 'Project Expo, Jury Review & Credentials',
-    time: '10:00 - 19:30 IST',
-    desc: 'Hackathon code freeze, live hardware demonstrations, jury evaluations, awards distribution, and verified JEC certificate issuance.',
-  },
-];
+import ParticleText from './ParticleText';
 
 export function AboutSection() {
   return (
@@ -83,50 +60,45 @@ export function AboutSection() {
         {/* ===================================================================
             3. CENTRALIZED EVENT SCHEDULE TIMELINE
             =================================================================== */}
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           {/* Sub-header */}
-          <div className="text-center mb-10 sm:mb-14">
+          <div className="text-center mb-8">
             <h3 className="text-2xl sm:text-3xl font-black font-sans text-white uppercase tracking-tight">
               Event Timeline & Milestones
             </h3>
-            <span className="text-[11px] font-mono text-neutral-500 block mt-1">
+            <span className="text-[11px] font-mono text-cyan-400 block mt-1 tracking-widest uppercase">
               TIMEZONE: IST (UTC+5:30) · JEC CENTRAL CAMPUS
             </span>
           </div>
 
-          {/* 3-Column Symmetrical Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 items-stretch">
-            {SCHEDULE_ITEMS.map((item, idx) => (
-              <div
-                key={idx}
-                className="p-6 sm:p-8 rounded-2xl border border-white/10 bg-black/80 backdrop-blur-md hover:border-cyan-400/40 hover:bg-neutral-950/90 transition-all duration-300 group shadow-xl flex flex-col items-center text-center justify-between"
-              >
-                <div className="w-full flex flex-col items-center">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-950/40 border border-cyan-400/30 text-cyan-300 font-mono text-xs font-bold tracking-wider mb-4">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                    <span>{item.day}</span>
-                  </div>
+          {/* Interactive ParticleText Container */}
+          <div
+            style={{ width: '100%', height: 360, background: '#09090f' }}
+            className="rounded-2xl border border-white/10 overflow-hidden relative shadow-2xl flex items-center justify-center"
+          >
+            <ParticleText
+              text="COMING SOON"
+              particleSize={2.2}
+              density={4}
+              color="#f8fafc"
+              highlightColor="#8b5cf6"
+              scatter={190}
+              gatherDuration={1600}
+              stagger={420}
+              pointerRepel={42}
+              repelRadius={120}
+              idleDrift={0.8}
+              trigger="mount"
+              fontSize="clamp(3.5rem, 13vw, 9rem)"
+              fontWeight={800}
+              fontFamily="inherit"
+              glow
+            />
+          </div>
 
-                  <span className="text-xs font-mono text-neutral-400 mb-3 tracking-widest uppercase">
-                    {item.date}
-                  </span>
-
-                  <h4 className="text-base sm:text-lg font-bold text-white mb-3 font-sans group-hover:text-cyan-200 transition-colors uppercase leading-snug">
-                    {item.title}
-                  </h4>
-
-                  <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed font-sans mb-6">
-                    {item.desc}
-                  </p>
-                </div>
-
-                <div className="w-full pt-4 border-t border-white/10 flex items-center justify-center">
-                  <span className="text-[11px] font-mono text-cyan-400 bg-cyan-950/30 px-3 py-1 rounded-full border border-cyan-400/20">
-                    {item.time}
-                  </span>
-                </div>
-              </div>
-            ))}
+          <div className="mt-6 flex items-center justify-center gap-2 text-xs font-mono text-neutral-400">
+            <Sparkles size={14} className="text-purple-400 animate-pulse" />
+            <span>SYMPOSIUM MILESTONES & SESSION SCHEDULE WILL BE ANNOUNCED SHORTLY</span>
           </div>
         </div>
       </div>
