@@ -28,6 +28,20 @@ const initFirebase = () => {
       return app;
     }
 
+    // Check Render Secret File path (/etc/secrets/serviceAccountKey.json)
+    const renderSecretPath = '/etc/secrets/serviceAccountKey.json';
+    if (fs.existsSync(renderSecretPath)) {
+      const fileData = fs.readFileSync(renderSecretPath, 'utf8');
+      const serviceAccount = JSON.parse(fileData);
+      const app = initializeApp({
+        credential: cert(serviceAccount),
+      });
+      isInitialized = true;
+      authInstance = getAuth(app);
+      console.log('[Firebase] Initialized with Render /etc/secrets/serviceAccountKey.json');
+      return app;
+    }
+
     // Check for default ./serviceAccountKey.json in server root or current working dir
     const defaultLocalPath = path.resolve(process.cwd(), 'serviceAccountKey.json');
     if (fs.existsSync(defaultLocalPath)) {
