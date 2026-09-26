@@ -1,41 +1,41 @@
 'use client';
 
 import React from 'react';
-import DepthCarousel from './DepthCarousel';
+import CircularGallery from './CircularGallery';
 import { Sparkles } from 'lucide-react';
 
-const CAROUSEL_ITEMS = [
+const GALLERY_ITEMS = [
   {
     image: '/gallery/event-1.jpg',
-    alt: 'TechBlitz Opening Ceremony & Keynote Stage',
+    text: 'Keynote & Opening Stage',
   },
   {
     image: '/gallery/event-2.jpg',
-    alt: 'Autonomous Robotics & Arena Testing Battles',
+    text: 'Autonomous Robotics',
   },
   {
     image: '/gallery/event-3.jpg',
-    alt: 'Hardware Prototyping & Sensor Calibration Lab',
+    text: 'Hardware Prototyping',
   },
   {
     image: '/gallery/event-4.jpg',
-    alt: 'Overnight 24-Hour Collegiate Hackathon Den',
+    text: '24-Hour Hackathon Den',
   },
   {
     image: '/gallery/event-5.jpg',
-    alt: 'Technical Paper Presentation & Systems Demo',
+    text: 'Systems Demo & Expo',
   },
   {
     image: '/gallery/event-6.jpg',
-    alt: 'Live Code Debugging & Mentor Guidance Sprint',
+    text: 'Live Code Debugging',
   },
   {
     image: '/gallery/event-7.jpg',
-    alt: 'Grand Valedictory & Champion Award Ceremony',
+    text: 'Grand Valedictory',
   },
   {
     image: '/gallery/event-8.jpg',
-    alt: 'Cosmos Technical Council & Volunteer Cohort',
+    text: 'Cosmos Guild Cohort',
   },
 ];
 
@@ -60,35 +60,23 @@ export function GallerySection() {
           </p>
         </div>
 
-        {/* 3D DepthCarousel Interactive Showcase */}
-        <div className="flex flex-col items-center">
-          <div className="mb-8 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-neutral-900/80 border border-white/10 text-[11px] font-mono text-cyan-400">
+        {/* 3D CircularGallery Interactive Showcase */}
+        <div className="flex flex-col items-center w-full">
+          <div className="mb-6 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-neutral-900/80 border border-white/10 text-[11px] font-mono text-cyan-400">
             <Sparkles size={13} className="text-cyan-400" />
-            <span>INTERACTIVE 3D DEPTH CAROUSEL • LAST YEAR HIGHLIGHTS</span>
+            <span>DRAG & SCROLL INTERACTIVE 3D CIRCULAR GALLERY • LAST YEAR HIGHLIGHTS</span>
           </div>
 
-          <div style={{ height: '520px', position: 'relative' }} className="w-full max-w-5xl">
-            <DepthCarousel
-              items={CAROUSEL_ITEMS}
-              depth={220}
-              spread={90}
-              tilt={60}
-              tiltDirection="right"
-              perspective={1400}
-              visibleCards={4}
-              falloff={0.29}
-              blur={12}
-              autoplay
-              loop
-              cardWidth={300}
-              cardHeight={380}
-              radius={18}
-              tint="#05060a"
-              duration={700}
-              ease="power3.out"
-              autoplayDelay={3200}
-              showControls
-              showIndicators
+          <div style={{ height: '600px', position: 'relative' }} className="w-full">
+            <CircularGallery
+              items={GALLERY_ITEMS}
+              bend={1}
+              textColor="#ffffff"
+              borderRadius={0.05}
+              scrollEase={0.05}
+              fontUrl=""
+              font="bold 30px Orbitron"
+              scrollSpeed={2}
             />
           </div>
         </div>
