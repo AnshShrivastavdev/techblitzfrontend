@@ -246,9 +246,23 @@ export default function DashboardStudent() {
           >
             ← Launchpad
           </button>
+          {user && (user.role === 'admin' || user.email?.toLowerCase().trim() === 'cosmos.jec@jecjabalpur.ac.in') && (
+            <button
+              onClick={() => router.push('/admin')}
+              className="dash-btn-secondary"
+              style={{ padding: '6px 12px', fontSize: '0.75rem', cursor: 'pointer', borderColor: 'rgba(56,189,248,0.5)', color: '#38bdf8' }}
+              title="Go to Mission Control Admin Dashboard"
+            >
+              ⚙️ Admin Panel
+            </button>
+          )}
           <div className="dash-user-info">
             <span className="dash-user-name">{displayName}</span>
-            <span className="dash-user-role">🎓 Student • {displayBranch}</span>
+            <span className="dash-user-role">
+              {user?.role === 'admin' || user?.email?.toLowerCase().trim() === 'cosmos.jec@jecjabalpur.ac.in'
+                ? '🛡️ Cosmos Admin'
+                : `🎓 Student • ${displayBranch}`}
+            </span>
           </div>
           <button
             onClick={() => {

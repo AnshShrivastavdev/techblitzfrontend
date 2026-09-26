@@ -43,8 +43,21 @@ import {
 } from 'lucide-react';
 
 export default function DashboardAdmin() {
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        router.push('/login');
+      } else if (
+        user.role !== 'admin' &&
+        user.email?.toLowerCase().trim() !== 'cosmos.jec@jecjabalpur.ac.in'
+      ) {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, loading, router]);
 
   const [module, setModule] = useState<'overview' | 'workshops' | 'users' | 'attendance' | 'certificates'>('overview');
   const [users, setUsers] = useState<User[]>([]);

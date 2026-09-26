@@ -7,7 +7,7 @@ export interface User {
   name: string;
   email: string;
   password?: string;
-  role: 'student' | 'speaker' | 'admin';
+  role: 'student' | 'admin';
   college?: string;
   branch?: string;
   semester?: string;
@@ -101,7 +101,8 @@ export interface DatabaseSchema {
 }
 
 const STORAGE_KEY = 'techblitz_db';
-const ADMIN_WHITELIST = ['admin@techblitz.com', 'organizer@techblitz.com'];
+export const ADMIN_EMAIL = 'cosmos.jec@jecjabalpur.ac.in';
+export const ADMIN_WHITELIST = ['cosmos.jec@jecjabalpur.ac.in'];
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
@@ -112,39 +113,15 @@ const SEED_DATA: DatabaseSchema = {
   users: [
     {
       id: 'admin-001',
-      name: 'Mission Control',
-      email: 'admin@techblitz.com',
+      name: 'COSMOS Mission Control (JEC)',
+      email: 'cosmos.jec@jecjabalpur.ac.in',
       password: 'admin123',
       role: 'admin',
-      college: '',
-      branch: '',
-      semester: '',
-      rollNumber: '',
+      college: 'Jabalpur Engineering College',
+      branch: 'CSE',
+      semester: 'Admin',
+      rollNumber: 'ADMIN-01',
       createdAt: '2026-08-01T10:00:00Z',
-    },
-    {
-      id: 'speaker-001',
-      name: 'Dr. Sarah Chen',
-      email: 'sarah.chen@techblitz.com',
-      password: 'speaker123',
-      role: 'speaker',
-      college: '',
-      branch: '',
-      semester: '',
-      rollNumber: '',
-      createdAt: '2026-08-05T10:00:00Z',
-    },
-    {
-      id: 'speaker-002',
-      name: 'Alex Rivera',
-      email: 'alex.rivera@techblitz.com',
-      password: 'speaker123',
-      role: 'speaker',
-      college: '',
-      branch: '',
-      semester: '',
-      rollNumber: '',
-      createdAt: '2026-08-06T10:00:00Z',
     },
     {
       id: 'student-001',
@@ -392,20 +369,11 @@ export function loginUser(email: string, password?: string): { success: boolean;
   if (!user) return { success: false, error: 'Invalid email or password' };
 
   let role = user.role;
-  if (isAdminEmail(email) && role !== 'speaker') {
+  if (isAdminEmail(email)) {
     role = 'admin';
   }
 
   return { success: true, user: { ...user, role } };
-}
-
-export function loginSpeaker(email: string, password?: string): { success: boolean; user?: User; error?: string } {
-  const db = getDB();
-  const user = db.users.find(
-    (u) => u.email.toLowerCase() === email.toLowerCase().trim() && (password ? u.password === password : true) && u.role === 'speaker'
-  );
-  if (!user) return { success: false, error: 'Invalid speaker credentials' };
-  return { success: true, user };
 }
 
 export function registerStudent(userData: Partial<User>): { success: boolean; user?: User; error?: string } {
@@ -419,7 +387,7 @@ export function registerStudent(userData: Partial<User>): { success: boolean; us
     name: userData.name || 'Cosmic Student',
     email: userData.email.trim(),
     password: userData.password || 'student123',
-    role: 'student',
+    role: isAdminEmail(userData.email) ? 'admin' : 'student',
     college: userData.college || '',
     branch: userData.branch || '',
     semester: userData.semester || '',

@@ -4,9 +4,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   User,
   loginUser,
-  loginSpeaker,
   registerStudent,
   getUserById,
+  isAdminEmail,
 } from '@/services/storageService';
 import {
   auth,
@@ -22,7 +22,6 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password?: string) => Promise<{ success: boolean; user?: User; error?: string }>;
-  speakerLogin: (email: string, password?: string) => { success: boolean; user?: User; error?: string };
   register: (userData: Partial<User>) => Promise<{ success: boolean; user?: User; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; user?: User; error?: string }>;
   logout: () => Promise<void>;
@@ -46,13 +45,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (firebaseUser) {
         // User is logged into Firebase
         const existingRaw = localStorage.getItem(SESSION_KEY);
-        let currentRole: 'student' | 'speaker' | 'admin' = 'student';
+        const isAdmin = Boolean(firebaseUser.email && isAdminEmail(firebaseUser.email));
+        let currentRole: 'student' | 'admin' = isAdmin ? 'admin' : 'student';
         let localProfile: User | null = null;
 
-        if (existingRaw) {
+        if (existingRaw && !isAdmin) {
           try {
             const sess = JSON.parse(existingRaw);
-            currentRole = sess.role || 'student';
+            currentRole = sess.role === 'admin' ? 'admin' : 'student';
             localProfile = getUserById(sess.id);
           } catch {
             // Ignore parse errors
@@ -81,7 +81,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const session = JSON.parse(raw);
             const freshUser = getUserById(session.id);
             if (freshUser) {
-              setUser({ ...freshUser, role: session.role || freshUser.role });
+              const role: 'student' | 'admin' = session.role === 'admin' ? 'admin' : 'student';
+              setUser({ ...freshUser, role });
             }
           } catch {
             localStorage.removeItem(SESSION_KEY);
@@ -105,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const cred = await signInWithEmailAndPassword(auth, email, password);
         const fbUser = cred.user;
-        const role = email.includes('admin') ? 'admin' : 'student';
+        const role: 'student' | 'admin' = isAdminEmail(email) ? 'admin' : 'student';
         const userObj: User = {
           id: fbUser.uid,
           name: fbUser.displayName || email.split('@')[0],
@@ -140,22 +141,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return result;
   }
 
-  function speakerLogin(email: string, password?: string) {
-    const result = loginSpeaker(email, password);
-    if (result.success && result.user) {
-      setUser(result.user);
-      persistSession(result.user);
-    }
-    return result;
-  }
-
   async function register(userData: Partial<User>) {
     // 1. Try real Firebase Authentication creation
     if (userData.email && userData.password && auth) {
       try {
         const cred = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
         const fbUser = cred.user;
-        const role = userData.role || (userData.email.includes('admin') ? 'admin' : 'student');
+        const role: 'student' | 'admin' = isAdminEmail(userData.email) ? 'admin' : 'student';
         const userObj: User = {
           id: fbUser.uid,
           name: userData.name || fbUser.displayName || userData.email.split('@')[0],
@@ -192,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const cred = await signInWithPopup(auth, googleProvider);
       const fbUser = cred.user;
-      const role = fbUser.email?.includes('admin') ? 'admin' : 'student';
+      const role: 'student' | 'admin' = isAdminEmail(fbUser.email || '') ? 'admin' : 'student';
       const userObj: User = {
         id: fbUser.uid,
         name: fbUser.displayName || fbUser.email?.split('@')[0] || 'TechBlitz Participant',
@@ -235,7 +227,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, speakerLogin, register, loginWithGoogle, logout, refreshUser }}
+      value={{ user, loading, login, register, loginWithGoogle, logout, refreshUser }}
     >
       {children}
     </AuthContext.Provider>
