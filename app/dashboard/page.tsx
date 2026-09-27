@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { KineticGrid } from '@/components/ui/kinetic-grid';
-import ElectricBorder from '@/components/ui/ElectricBorder';
+import ParticleText from '@/components/ParticleText';
 import {
   Workshop,
   Registration,
@@ -34,6 +34,7 @@ import {
   ShieldCheck,
   Radio,
   Zap,
+  Sparkles,
 } from 'lucide-react';
 
 export default function DashboardStudent() {
@@ -376,81 +377,55 @@ export default function DashboardStudent() {
           <div className="dash-content-pane">
             <div className="dash-pane-header">
               <h3>Available Space Science & Tech Workshops</h3>
-              <span className="dash-counter-pill">{workshops.length} Programs</span>
+              <span
+                className="dash-counter-pill"
+                style={{ color: '#38bdf8', borderColor: 'rgba(56,189,248,0.3)', background: 'rgba(56,189,248,0.06)' }}
+              >
+                Curriculum in Progress
+              </span>
             </div>
 
-            <div className="dash-grid-cards">
-              {workshops.map((ws) => {
-                const isRegistered = registeredWorkshopIds.has(ws.id);
-                const borderColor = ws.status === 'live' ? '#00d4ff' : '#38bdf8';
-                return (
-                  <ElectricBorder
-                    key={ws.id}
-                    color={borderColor}
-                    speed={ws.status === 'live' ? 1.4 : 0.9}
-                    chaos={ws.status === 'live' ? 0.16 : 0.1}
-                    borderRadius={16}
-                    style={{ height: '100%' }}
-                  >
-                    <div className="dash-card" style={{ height: '100%', margin: 0 }}>
-                      <div className="dash-card__top">
-                        <span className={`dash-badge dash-badge--${ws.status}`}>
-                          {ws.status === 'live' && <span className="dash-pulse-dot" />}
-                          {ws.status.toUpperCase()}
-                        </span>
-                        <span className="dash-category-tag">{ws.track || 'Cosmos Track'}</span>
-                      </div>
+            {/* Interactive React Bits ParticleText Coming Soon */}
+            <div
+              style={{ width: '100%', height: 360, background: '#09090f' }}
+              className="rounded-2xl border border-white/10 overflow-hidden relative shadow-2xl flex items-center justify-center my-4"
+            >
+              <ParticleText
+                text="COMING SOON"
+                particleSize={2.2}
+                density={4}
+                color="#f8fafc"
+                highlightColor="#38bdf8"
+                scatter={190}
+                gatherDuration={1600}
+                stagger={420}
+                pointerRepel={42}
+                repelRadius={120}
+                idleDrift={0.8}
+                trigger="mount"
+                fontSize="clamp(3rem, 10vw, 7.5rem)"
+                fontWeight={800}
+                fontFamily="inherit"
+                glow
+              />
+            </div>
 
-                      <h4 className="dash-card__title">{ws.title}</h4>
-                      <p className="dash-card__desc">{ws.description}</p>
-
-                      <div className="dash-card__meta">
-                        <div>
-                          <Calendar size={14} />{' '}
-                          {ws.scheduledStartTime
-                            ? new Date(ws.scheduledStartTime).toLocaleDateString()
-                            : 'September 2026'}
-                        </div>
-                        <div>
-                          <Clock size={14} /> {ws.minAttendanceMinutes * 3 || 90} mins
-                        </div>
-                        <div>
-                          <UserIcon size={14} /> {ws.speakerName || 'Dr. Sarah Chen (Keynote)'}
-                        </div>
-                      </div>
-
-                      <div className="dash-card__footer">
-                        {isRegistered ? (
-                          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                            <button
-                              onClick={() => setActiveTab('live')}
-                              className="dash-btn-primary"
-                              style={{ flex: 1 }}
-                            >
-                              Go to Hub
-                            </button>
-                            <button
-                              onClick={() => handleUnregister(ws.id)}
-                              className="dash-btn-secondary"
-                              title="Cancel Registration"
-                            >
-                              Unregister
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => handleRegister(ws.id)}
-                            className="dash-btn-primary"
-                            style={{ width: '100%' }}
-                          >
-                            Register 1-Click
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </ElectricBorder>
-                );
-              })}
+            {/* Explanatory Mission Narrative */}
+            <div className="mt-8 text-center max-w-xl mx-auto flex flex-col items-center pb-6">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-400/30 bg-cyan-950/20 text-cyan-300 text-xs font-mono tracking-widest uppercase mb-4 shadow-[0_0_15px_rgba(56,189,248,0.15)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                <span>WORKSHOP ACCREDITATIONS // FINALIZING SESSIONS</span>
+              </div>
+              <h4 className="text-xl sm:text-2xl font-bold font-sans text-white mb-3">
+                Hands-On Technical Tracks Dropping Soon
+              </h4>
+              <p className="text-neutral-400 text-xs sm:text-sm leading-relaxed font-sans mb-6">
+                Official hands-on workshops in Space Science, Embedded Robotics, Neural AI, and Satellite Telemetry are currently being finalized with our industry mentors and collegiate partner labs. One-click registration will unlock once schedules are confirmed.
+              </p>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-neutral-300 text-xs font-mono">
+                <Sparkles size={14} className="text-cyan-400 animate-pulse" />
+                <span>NOTIFICATIONS WILL BE BROADCASTED TO REGISTERED STUDENTS</span>
+              </div>
             </div>
           </div>
         )}
