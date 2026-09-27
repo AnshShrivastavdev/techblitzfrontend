@@ -272,6 +272,18 @@ export function upsertUser(user: User): User {
   return user;
 }
 
+export function deleteUserById(userId: string, email?: string): boolean {
+  const db = getDB();
+  const initialLen = db.users.length;
+  db.users = db.users.filter(
+    (u) => u.id !== userId && (!email || u.email.toLowerCase() !== email.toLowerCase().trim())
+  );
+  db.registrations = db.registrations.filter((r) => r.userId !== userId);
+  db.attendanceLogs = db.attendanceLogs.filter((a) => a.userId !== userId);
+  saveDB(db);
+  return db.users.length < initialLen;
+}
+
 // ------- Workshops -------
 export function getAllWorkshops(): Workshop[] {
   return getDB().workshops;

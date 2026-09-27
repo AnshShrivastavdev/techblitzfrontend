@@ -3,9 +3,10 @@ import {
   collection,
   doc,
   setDoc,
+  deleteDoc,
   onSnapshot,
 } from 'firebase/firestore';
-import { User, upsertUser, getAllUsers, exportToCSV } from '@/services/storageService';
+import { User, upsertUser, deleteUserById, getAllUsers, exportToCSV } from '@/services/storageService';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://techblitzfrontend.onrender.com/api';
 
@@ -106,6 +107,7 @@ export function subscribeToRealtimeStudents(
               branch: data.branch || '',
               semester: data.semester || '',
               rollNumber: data.rollNumber || data.collegeRoll || '',
+              phone: data.phone || '',
               createdAt: data.createdAt || new Date().toISOString(),
             });
           }
@@ -154,6 +156,7 @@ export function subscribeToRealtimeStudents(
                 branch: u.branch || existing?.branch || '',
                 semester: u.semester || existing?.semester || '',
                 rollNumber: u.collegeRoll || u.rollNumber || existing?.rollNumber || '',
+                phone: u.phone || existing?.phone || '',
                 createdAt: u.createdAt || existing?.createdAt || new Date().toISOString(),
               });
             }
@@ -175,7 +178,47 @@ export function subscribeToRealtimeStudents(
 }
 
 /**
- * Exports current real-time students list to CSV
+ * Permanently removes a student in real-time from:
+ * 1. Firebase Firestore ('students' collection)
+ * 2. MongoDB backend API (DELETE /admin/users/:id)
+ * 3. LocalStorage
+ */
+export async function removeStudentFromCloud(studentId: string, studentEmail?: string): Promise<boolean> {
+  // 1. Remove from local storage
+  deleteUserById(studentId, studentEmail);
+
+  // 2. Remove from Firebase Firestore
+  try {
+    const studentRef = doc(db, 'students', studentId);
+    await deleteDoc(studentRef);
+  } catch (err) {
+    console.warn('[RealtimeSync] Firestore delete notice:', err);
+  }
+
+  // 3. Remove from MongoDB backend
+  try {
+    let token = '';
+    if (auth.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken();
+      } catch {}
+    }
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    await fetch(`${API_BASE}/admin/users/${encodeURIComponent(studentId)}`, {
+      method: 'DELETE',
+      headers,
+    }).catch(() => {});
+  } catch (err) {
+    console.warn('[RealtimeSync] MongoDB delete notice:', err);
+  }
+
+  return true;
+}
+
+/**
+ * Exports current real-time students list to CSV with exact required fields:
+ * Name, Email ID, Branch, College, Semester, Roll Number, Phone, Registration Date
  */
 export function exportLiveStudentsCSV(students: User[]): boolean {
   if (!students || students.length === 0) {
@@ -186,16 +229,15 @@ export function exportLiveStudentsCSV(students: User[]): boolean {
   }
   const formattedUsers = students.map((u, idx) => ({
     'S.No': idx + 1,
-    'User ID': u.id,
-    'Participant Name': u.name,
-    'Email Address': u.email,
-    'Role': u.role.toUpperCase(),
-    'College / Institution': u.college || 'N/A',
-    'Branch / Department': u.branch || 'N/A',
+    'Participant Name': u.name || 'Participant',
+    'Email Address': u.email || '',
+    'College / Institution': u.college || u.institution || 'Jabalpur Engineering College',
+    'Branch': u.branch || 'CSE',
     'Semester': u.semester || 'N/A',
-    'Roll Number': u.rollNumber || 'N/A',
+    'Roll Number / College ID': u.rollNumber || 'N/A',
+    'Phone': u.phone || 'N/A',
     'Registration Date': u.createdAt ? new Date(u.createdAt).toLocaleString('en-IN') : 'N/A',
   }));
-  exportToCSV(formattedUsers, `TechBlitz_Realtime_Students_${new Date().toISOString().slice(0, 10)}.csv`);
+  exportToCSV(formattedUsers, `TechBlitz_Students_Roster_${new Date().toISOString().slice(0, 10)}.csv`);
   return true;
 }

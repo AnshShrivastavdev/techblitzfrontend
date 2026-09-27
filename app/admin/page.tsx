@@ -23,7 +23,11 @@ import {
   exportAttendanceCSV,
   getFAQs,
 } from '@/services/storageService';
-import { subscribeToRealtimeStudents, exportLiveStudentsCSV } from '@/services/realtimeUserService';
+import {
+  subscribeToRealtimeStudents,
+  exportLiveStudentsCSV,
+  removeStudentFromCloud,
+} from '@/services/realtimeUserService';
 import {
   Users,
   Calendar,
@@ -41,6 +45,17 @@ import {
   Layers,
   FileSpreadsheet,
   RefreshCw,
+  Eye,
+  X,
+  Copy,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  GraduationCap,
+  Building2,
+  Phone,
+  Mail,
+  AlertTriangle,
 } from 'lucide-react';
 
 export default function DashboardAdmin() {
@@ -108,6 +123,42 @@ export default function DashboardAdmin() {
 
     return () => unsubscribe();
   }, []);
+
+  // Real-Time Student Management States
+  const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
+  const [studentToRemove, setStudentToRemove] = useState<User | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+  const [userBranchFilter, setUserBranchFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  const handleCopyEmail = (email: string) => {
+    if (typeof window !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(email);
+      setCopiedEmail(email);
+      setTimeout(() => setCopiedEmail(null), 2000);
+    }
+  };
+
+  const handleConfirmRemove = async () => {
+    if (!studentToRemove) return;
+    setIsRemoving(true);
+    try {
+      await removeStudentFromCloud(studentToRemove.id, studentToRemove.email);
+      // Immediately filter out locally for instant response
+      setUsers((prev) => prev.filter((u) => u.id !== studentToRemove.id && u.email !== studentToRemove.email));
+      showToast('success', `Student "${studentToRemove.name}" removed in real-time.`);
+      if (selectedStudent?.id === studentToRemove.id) {
+        setSelectedStudent(null);
+      }
+      setStudentToRemove(null);
+    } catch (err: any) {
+      showToast('error', err?.message || 'Failed to remove student');
+    } finally {
+      setIsRemoving(false);
+    }
+  };
 
   const showToast = (type: string, msg: string) => {
     setFeedback({ type, msg });
@@ -196,13 +247,35 @@ export default function DashboardAdmin() {
     doc.save(`Certificate_${cert.certificateNumber || cert.id}.pdf`);
   };
 
-  const filteredUsers = users.filter((u) => {
-    const matchesSearch =
-      u.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.email?.toLowerCase().includes(userSearch.toLowerCase());
-    const matchesRole = userRoleFilter === 'all' || u.role === userRoleFilter;
-    return matchesSearch && matchesRole;
+  const allStudents = users.filter((u) => u.role !== 'admin');
+  const uniqueBranches = Array.from(
+    new Set(allStudents.map((u) => (u.branch || 'CSE').toUpperCase().trim()).filter(Boolean))
+  ).sort();
+
+  const filteredStudents = allStudents.filter((u) => {
+    if (
+      userBranchFilter !== 'all' &&
+      (u.branch || 'CSE').toUpperCase().trim() !== userBranchFilter.toUpperCase().trim()
+    ) {
+      return false;
+    }
+    if (!userSearch.trim()) return true;
+    const q = userSearch.toLowerCase().trim();
+    return (
+      (u.name && u.name.toLowerCase().includes(q)) ||
+      (u.email && u.email.toLowerCase().includes(q)) ||
+      (u.rollNumber && u.rollNumber.toLowerCase().includes(q)) ||
+      (u.college && u.college.toLowerCase().includes(q)) ||
+      (u.institution && u.institution.toLowerCase().includes(q)) ||
+      (u.branch && u.branch.toLowerCase().includes(q)) ||
+      (u.phone && u.phone.toLowerCase().includes(q))
+    );
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const paginatedStudents = filteredStudents.slice(startIndex, startIndex + pageSize);
 
   const displayName = user?.name || 'Mission Control Admin';
 
@@ -265,8 +338,8 @@ export default function DashboardAdmin() {
               <Users size={20} color="#38bdf8" />
             </div>
             <div>
-              <div className="dash-stat-value">{users.length}</div>
-              <div className="dash-stat-label">Total Registered Users</div>
+              <div className="dash-stat-value">{allStudents.length}</div>
+              <div className="dash-stat-label">Registered Students</div>
             </div>
           </div>
 
@@ -319,7 +392,7 @@ export default function DashboardAdmin() {
             className={`dash-tab ${module === 'users' ? 'dash-tab--active' : ''}`}
             onClick={() => setModule('users')}
           >
-            <Users size={16} /> Directory ({users.length})
+            <Users size={16} /> Student Management ({allStudents.length})
           </button>
           <button
             className={`dash-tab ${module === 'attendance' ? 'dash-tab--active' : ''}`}
@@ -574,129 +647,574 @@ export default function DashboardAdmin() {
           </div>
         )}
 
-        {/* MODULE 3: USER DIRECTORY (REAL-TIME STUDENT DETAILS & EXPORT CSV) */}
+        {/* MODULE 3: REAL-TIME STUDENT MANAGEMENT CONSOLE */}
         {module === 'users' && (
           <div className="dash-content-pane">
-            <div className="dash-pane-header">
+            {/* Header with Title and Actions */}
+            <div className="dash-pane-header" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
               <div>
-                <h3>Platform Real-Time User Directory</h3>
-                <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: '4px 0 0' }}>
-                  Live synchronized roster of authenticated delegates and students
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <h3 style={{ margin: 0 }}>Real-Time Student Management Console</h3>
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '3px 10px',
+                      borderRadius: 9999,
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      background: 'rgba(16, 185, 129, 0.12)',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      color: '#34d399',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 7,
+                        height: 7,
+                        borderRadius: '50%',
+                        backgroundColor: '#10b981',
+                        boxShadow: '0 0 8px #10b981',
+                      }}
+                    />
+                    Live Telemetry Sync Active
+                  </span>
+                </div>
+                <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: '6px 0 0' }}>
+                  Synchronized live roster across Firebase Firestore & MongoDB • Calibrated for real-time management of 1,220 to 1,500+ student delegates
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
+
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <button
                   onClick={() => {
                     loadAll();
-                    showToast('success', 'Real-time user directory refreshed.');
+                    showToast('success', 'Real-time student registry re-synchronized.');
                   }}
                   className="dash-btn-secondary"
-                  title="Reload real-time student details"
+                  title="Force re-fetch from Firebase & MongoDB"
                 >
-                  <RefreshCw size={14} /> Refresh
+                  <RefreshCw size={14} /> Re-sync Roster
                 </button>
                 <button
                   onClick={() => {
-                    const studentsOnly = filteredUsers.filter((u) => u.role !== 'admin');
-                    if (studentsOnly.length > 0) {
-                      exportLiveStudentsCSV(studentsOnly);
-                    } else {
-                      exportUsersCSV();
-                    }
+                    const exportTarget = filteredStudents.length > 0 ? filteredStudents : allStudents;
+                    exportLiveStudentsCSV(exportTarget);
+                    showToast('success', `Exported CSV with ${exportTarget.length} participant records.`);
                   }}
                   className="dash-btn-primary"
-                  title="Export live student directory to CSV"
+                  title="Export live student directory to CSV with complete student details"
                 >
-                  <FileSpreadsheet size={15} /> Export Students CSV
+                  <FileSpreadsheet size={15} /> Export Students CSV ({filteredStudents.length})
                 </button>
               </div>
             </div>
 
-            {/* Filters */}
-            <div style={{ display: 'flex', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
-              <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
-                <Search
-                  size={16}
-                  style={{ position: 'absolute', left: 12, top: 12, color: '#64748b' }}
-                />
-                <input
-                  type="text"
-                  placeholder="Search student name, email, roll number or college..."
-                  value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
-                  style={{ paddingLeft: 36, width: '100%' }}
-                  className="dash-input"
-                />
+            {/* Live Metrics Row */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                gap: 12,
+                margin: '18px 0',
+              }}
+            >
+              <div
+                style={{
+                  background: 'rgba(15, 23, 42, 0.65)',
+                  border: '1px solid rgba(56, 189, 248, 0.2)',
+                  borderRadius: 12,
+                  padding: '12px 16px',
+                }}
+              >
+                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: 600 }}>
+                  Total Registered Students
+                </div>
+                <div style={{ fontSize: '1.45rem', fontWeight: 700, color: '#38bdf8', marginTop: 4 }}>
+                  {allStudents.length}
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: 2 }}>
+                  Across all campuses
+                </div>
               </div>
 
-              <select
-                value={userRoleFilter}
-                onChange={(e) => setUserRoleFilter(e.target.value)}
-                className="dash-select"
-                style={{ width: 160 }}
+              <div
+                style={{
+                  background: 'rgba(15, 23, 42, 0.65)',
+                  border: '1px solid rgba(139, 92, 246, 0.2)',
+                  borderRadius: 12,
+                  padding: '12px 16px',
+                }}
               >
-                <option value="all">All Roles</option>
-                <option value="student">Students</option>
-                <option value="admin">Admins</option>
-              </select>
+                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: 600 }}>
+                  Active Filter Matches
+                </div>
+                <div style={{ fontSize: '1.45rem', fontWeight: 700, color: '#c084fc', marginTop: 4 }}>
+                  {filteredStudents.length}
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: 2 }}>
+                  {userSearch || userBranchFilter !== 'all' ? 'Filtered results' : '100% of participants'}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: 'rgba(15, 23, 42, 0.65)',
+                  border: '1px solid rgba(16, 185, 129, 0.2)',
+                  borderRadius: 12,
+                  padding: '12px 16px',
+                }}
+              >
+                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: 600 }}>
+                  Unique Branches
+                </div>
+                <div style={{ fontSize: '1.45rem', fontWeight: 700, color: '#34d399', marginTop: 4 }}>
+                  {uniqueBranches.length || 1}
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: 2 }}>
+                  CSE, IT, ECE, EE & more
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: 'rgba(15, 23, 42, 0.65)',
+                  border: '1px solid rgba(245, 158, 11, 0.2)',
+                  borderRadius: 12,
+                  padding: '12px 16px',
+                }}
+              >
+                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: 600 }}>
+                  Cloud Engines
+                </div>
+                <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#fbbf24', marginTop: 6 }}>
+                  Firestore + Mongo
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: 2 }}>
+                  Real-time delete sync
+                </div>
+              </div>
             </div>
 
+            {/* Search, Filter, and Page Size Controls */}
+            <div
+              style={{
+                display: 'flex',
+                gap: 12,
+                marginBottom: 16,
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', gap: 12, flex: 1, minWidth: 280, flexWrap: 'wrap' }}>
+                <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
+                  <Search
+                    size={16}
+                    style={{ position: 'absolute', left: 12, top: 12, color: '#64748b' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Search by student name, email, roll number, college, phone..."
+                    value={userSearch}
+                    onChange={(e) => {
+                      setUserSearch(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    style={{ paddingLeft: 36, width: '100%' }}
+                    className="dash-input"
+                  />
+                  {userSearch && (
+                    <button
+                      onClick={() => {
+                        setUserSearch('');
+                        setCurrentPage(1);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: 10,
+                        top: 10,
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#64748b',
+                        cursor: 'pointer',
+                      }}
+                      title="Clear Search"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Branch Filter */}
+                <select
+                  value={userBranchFilter}
+                  onChange={(e) => {
+                    setUserBranchFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="dash-select"
+                  style={{ minWidth: 160 }}
+                >
+                  <option value="all">All Branches ({allStudents.length})</option>
+                  {uniqueBranches.map((b) => {
+                    const count = allStudents.filter(
+                      (s) => (s.branch || 'CSE').toUpperCase().trim() === b
+                    ).length;
+                    return (
+                      <option key={b} value={b}>
+                        {b} ({count})
+                      </option>
+                    );
+                  })}
+                </select>
+
+                {(userSearch || userBranchFilter !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setUserSearch('');
+                      setUserBranchFilter('all');
+                      setCurrentPage(1);
+                    }}
+                    className="dash-btn-secondary"
+                    style={{ fontSize: '0.78rem', padding: '6px 12px' }}
+                  >
+                    Reset Filters
+                  </button>
+                )}
+              </div>
+
+              {/* Page Size Selector */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Show:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="dash-select"
+                  style={{ width: 110, padding: '6px 10px', fontSize: '0.8rem' }}
+                >
+                  <option value={25}>25 / page</option>
+                  <option value={50}>50 / page</option>
+                  <option value={100}>100 / page</option>
+                  <option value={500}>500 / page</option>
+                  <option value={1500}>All (1500)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Students Table */}
             <div className="dash-table-wrap">
               <table className="dash-table">
                 <thead>
                   <tr>
+                    <th style={{ width: 40 }}>#</th>
                     <th>Participant Name & Email</th>
-                    <th>Role</th>
                     <th>College / Institution</th>
                     <th>Branch & Semester</th>
                     <th>Roll Number</th>
+                    <th>Contact Phone</th>
                     <th>Registration Date</th>
+                    <th style={{ textAlign: 'right', paddingRight: 16 }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.length === 0 ? (
+                  {paginatedStudents.length === 0 ? (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '36px 16px', color: '#94a3b8' }}>
-                        No registered students found matching the current search criteria. Live participant records will appear automatically as delegates sign in or register.
+                      <td colSpan={8} style={{ textAlign: 'center', padding: '48px 16px', color: '#94a3b8' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                          <Users size={36} color="#64748b" />
+                          <div style={{ color: '#f8fafc', fontWeight: 600, fontSize: '1rem' }}>
+                            No Students Found
+                          </div>
+                          <div style={{ fontSize: '0.82rem', maxWidth: 420 }}>
+                            {userSearch || userBranchFilter !== 'all'
+                              ? 'No participants matched your active search query or branch filter. Try clearing your filters.'
+                              : 'No student accounts have signed in or registered yet. As participants register with Firebase/Google, their live credentials will stream here instantly.'}
+                          </div>
+                          {(userSearch || userBranchFilter !== 'all') && (
+                            <button
+                              onClick={() => {
+                                setUserSearch('');
+                                setUserBranchFilter('all');
+                                setCurrentPage(1);
+                              }}
+                              className="dash-btn-secondary"
+                              style={{ marginTop: 8 }}
+                            >
+                              Clear Search & Filters
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ) : (
-                    filteredUsers.map((u) => (
-                      <tr key={u.id}>
-                        <td>
-                          <strong>{u.name}</strong>
-                          <div style={{ fontSize: '0.75rem', color: '#38bdf8' }}>{u.email}</div>
-                        </td>
-                        <td>
-                          <span className={`dash-badge dash-badge--${u.role}`}>
-                            {u.role.toUpperCase()}
-                          </span>
-                        </td>
-                        <td>{u.college || 'Jabalpur Engineering College'}</td>
-                        <td>
-                          {u.branch || 'CSE'}
-                          {u.semester ? ` • Sem ${u.semester}` : ''}
-                        </td>
-                        <td>
-                          <span style={{ fontFamily: 'monospace', color: '#cbd5e1' }}>
-                            {u.rollNumber || '—'}
-                          </span>
-                        </td>
-                        <td>
-                          {u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-IN', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          }) : '—'}
-                        </td>
-                      </tr>
-                    ))
+                    paginatedStudents.map((u, idx) => {
+                      const absoluteIndex = startIndex + idx + 1;
+                      const initials = (u.name || 'P')
+                        .split(' ')
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase();
+
+                      return (
+                        <tr key={u.id} style={{ transition: 'background 0.15s ease' }}>
+                          <td style={{ color: '#64748b', fontSize: '0.78rem', fontFamily: 'monospace' }}>
+                            {absoluteIndex}
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <div
+                                style={{
+                                  width: 32,
+                                  height: 32,
+                                  borderRadius: '50%',
+                                  background: 'linear-gradient(135deg, rgba(56,189,248,0.2), rgba(139,92,246,0.2))',
+                                  border: '1px solid rgba(56,189,248,0.4)',
+                                  color: '#38bdf8',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontWeight: 700,
+                                  fontSize: '0.78rem',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {initials}
+                              </div>
+                              <div>
+                                <strong style={{ color: '#f8fafc', fontSize: '0.9rem' }}>{u.name}</strong>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                                  <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontFamily: 'monospace' }}>
+                                    {u.email}
+                                  </span>
+                                  <button
+                                    onClick={() => handleCopyEmail(u.email)}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      padding: 0,
+                                      cursor: 'pointer',
+                                      color: copiedEmail === u.email ? '#34d399' : '#64748b',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                    }}
+                                    title="Copy Email to Clipboard"
+                                  >
+                                    {copiedEmail === u.email ? <Check size={12} /> : <Copy size={12} />}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <Building2 size={13} color="#94a3b8" />
+                              <span style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>
+                                {u.college || u.institution || 'Jabalpur Engineering College'}
+                              </span>
+                            </div>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              <span
+                                style={{
+                                  padding: '2px 8px',
+                                  borderRadius: 4,
+                                  fontSize: '0.72rem',
+                                  fontWeight: 600,
+                                  background: 'rgba(56, 189, 248, 0.1)',
+                                  color: '#38bdf8',
+                                  border: '1px solid rgba(56, 189, 248, 0.25)',
+                                }}
+                              >
+                                {u.branch || 'CSE'}
+                              </span>
+                              <span
+                                style={{
+                                  padding: '2px 7px',
+                                  borderRadius: 4,
+                                  fontSize: '0.72rem',
+                                  background: 'rgba(255, 255, 255, 0.05)',
+                                  color: '#94a3b8',
+                                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                                }}
+                              >
+                                Sem {u.semester || '1'}
+                              </span>
+                            </div>
+                          </td>
+                          <td>
+                            <span
+                              style={{
+                                fontFamily: 'monospace',
+                                fontSize: '0.8rem',
+                                color: '#e2e8f0',
+                                background: 'rgba(0,0,0,0.3)',
+                                padding: '3px 8px',
+                                borderRadius: 4,
+                                border: '1px solid rgba(255,255,255,0.08)',
+                              }}
+                            >
+                              {u.rollNumber || '—'}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '0.8rem', color: u.phone ? '#cbd5e1' : '#64748b' }}>
+                              {u.phone || '—'}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                              {u.createdAt
+                                ? new Date(u.createdAt).toLocaleDateString('en-IN', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })
+                                : '—'}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'right', paddingRight: 16 }}>
+                            <div style={{ display: 'inline-flex', gap: 6 }}>
+                              <button
+                                onClick={() => setSelectedStudent(u)}
+                                className="dash-btn-secondary"
+                                style={{ padding: '5px 10px', fontSize: '0.75rem', gap: 4 }}
+                                title="View Complete Student Dossier"
+                              >
+                                <Eye size={13} /> View
+                              </button>
+                              <button
+                                onClick={() => setStudentToRemove(u)}
+                                className="dash-btn-danger"
+                                style={{ padding: '5px 10px', fontSize: '0.75rem', gap: 4 }}
+                                title="Delete Participant in Real Time"
+                              >
+                                <Trash2 size={13} /> Remove
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {filteredStudents.length > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginTop: 16,
+                  padding: '12px 16px',
+                  background: 'rgba(15, 23, 42, 0.4)',
+                  borderRadius: 10,
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                  flexWrap: 'wrap',
+                  gap: 12,
+                }}
+              >
+                <div style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
+                  Showing <strong style={{ color: '#f8fafc' }}>{startIndex + 1}</strong> to{' '}
+                  <strong style={{ color: '#f8fafc' }}>
+                    {Math.min(startIndex + pageSize, filteredStudents.length)}
+                  </strong>{' '}
+                  of <strong style={{ color: '#38bdf8' }}>{filteredStudents.length}</strong> registered students
+                  {filteredStudents.length !== allStudents.length && ` (filtered from ${allStudents.length} total)`}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={safeCurrentPage <= 1}
+                    className="dash-btn-secondary"
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '0.75rem',
+                      opacity: safeCurrentPage <= 1 ? 0.4 : 1,
+                      cursor: safeCurrentPage <= 1 ? 'not-allowed' : 'pointer',
+                    }}
+                    title="First Page"
+                  >
+                    « First
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={safeCurrentPage <= 1}
+                    className="dash-btn-secondary"
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      opacity: safeCurrentPage <= 1 ? 0.4 : 1,
+                      cursor: safeCurrentPage <= 1 ? 'not-allowed' : 'pointer',
+                    }}
+                    title="Previous Page"
+                  >
+                    <ChevronLeft size={14} /> Prev
+                  </button>
+
+                  <span
+                    style={{
+                      padding: '4px 12px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      color: '#f8fafc',
+                      background: 'rgba(56, 189, 248, 0.1)',
+                      borderRadius: 6,
+                      border: '1px solid rgba(56, 189, 248, 0.2)',
+                    }}
+                  >
+                    Page {safeCurrentPage} of {totalPages}
+                  </span>
+
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safeCurrentPage >= totalPages}
+                    className="dash-btn-secondary"
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      opacity: safeCurrentPage >= totalPages ? 0.4 : 1,
+                      cursor: safeCurrentPage >= totalPages ? 'not-allowed' : 'pointer',
+                    }}
+                    title="Next Page"
+                  >
+                    Next <ChevronRight size={14} />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={safeCurrentPage >= totalPages}
+                    className="dash-btn-secondary"
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '0.75rem',
+                      opacity: safeCurrentPage >= totalPages ? 0.4 : 1,
+                      cursor: safeCurrentPage >= totalPages ? 'not-allowed' : 'pointer',
+                    }}
+                    title="Last Page"
+                  >
+                    Last »
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -804,6 +1322,408 @@ export default function DashboardAdmin() {
           </div>
         )}
       </main>
+
+      {/* MODAL 1: STUDENT DETAILS DOSSIER */}
+      {selectedStudent && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(2, 6, 23, 0.85)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={() => setSelectedStudent(null)}
+        >
+          <div
+            style={{
+              backgroundColor: '#090d16',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              borderRadius: 16,
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.15)',
+              maxWidth: 580,
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: 24,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                paddingBottom: 16,
+                marginBottom: 20,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #0284c7, #7c3aed)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.1rem',
+                    fontWeight: 700,
+                    color: '#fff',
+                    boxShadow: '0 0 15px rgba(56, 189, 248, 0.4)',
+                  }}
+                >
+                  {(selectedStudent.name || 'P')[0].toUpperCase()}
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#f8fafc' }}>
+                    {selectedStudent.name}
+                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                    <span
+                      style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        padding: '2px 8px',
+                        borderRadius: 4,
+                        background: 'rgba(56, 189, 248, 0.15)',
+                        color: '#38bdf8',
+                        border: '1px solid rgba(56, 189, 248, 0.3)',
+                      }}
+                    >
+                      Student Delegate
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                      UID: {selectedStudent.id.slice(0, 10)}...
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setSelectedStudent(null)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: 8,
+                  padding: 8,
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                title="Close Modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Details Grid */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: 14,
+                marginBottom: 24,
+              }}
+            >
+              <div
+                style={{
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: 10,
+                  padding: '12px 14px',
+                }}
+              >
+                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>
+                  Participant Name
+                </div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#f8fafc', marginTop: 4 }}>
+                  {selectedStudent.name}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: 10,
+                  padding: '12px 14px',
+                }}
+              >
+                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>
+                  Email Address
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                  <span style={{ fontSize: '0.85rem', color: '#38bdf8', fontFamily: 'monospace' }}>
+                    {selectedStudent.email}
+                  </span>
+                  <button
+                    onClick={() => handleCopyEmail(selectedStudent.email)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: copiedEmail === selectedStudent.email ? '#34d399' : '#94a3b8',
+                      cursor: 'pointer',
+                      padding: 2,
+                    }}
+                    title="Copy Email"
+                  >
+                    {copiedEmail === selectedStudent.email ? <Check size={14} /> : <Copy size={14} />}
+                  </button>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: 10,
+                  padding: '12px 14px',
+                }}
+              >
+                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>
+                  College / Institution
+                </div>
+                <div style={{ fontSize: '0.9rem', color: '#e2e8f0', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Building2 size={14} color="#38bdf8" />
+                  <span>{selectedStudent.college || selectedStudent.institution || 'Jabalpur Engineering College'}</span>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: 10,
+                  padding: '12px 14px',
+                }}
+              >
+                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>
+                  Branch & Semester
+                </div>
+                <div style={{ fontSize: '0.9rem', color: '#e2e8f0', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <GraduationCap size={14} color="#34d399" />
+                  <span>
+                    {selectedStudent.branch || 'CSE'} • Sem {selectedStudent.semester || '1'}
+                  </span>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: 10,
+                  padding: '12px 14px',
+                }}
+              >
+                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>
+                  Roll Number / College ID
+                </div>
+                <div style={{ fontSize: '0.9rem', color: '#cbd5e1', fontFamily: 'monospace', marginTop: 4 }}>
+                  {selectedStudent.rollNumber || 'Not Specified'}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: 10,
+                  padding: '12px 14px',
+                }}
+              >
+                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>
+                  Contact Phone
+                </div>
+                <div style={{ fontSize: '0.9rem', color: '#e2e8f0', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Phone size={14} color="#a78bfa" />
+                  <span>{selectedStudent.phone || 'Not Provided'}</span>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: 10,
+                  padding: '12px 14px',
+                  gridColumn: '1 / -1',
+                }}
+              >
+                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>
+                  Registration Timestamp
+                </div>
+                <div style={{ fontSize: '0.88rem', color: '#94a3b8', marginTop: 4 }}>
+                  {selectedStudent.createdAt
+                    ? new Date(selectedStudent.createdAt).toLocaleString('en-IN', {
+                        dateStyle: 'full',
+                        timeStyle: 'medium',
+                      })
+                    : 'System Initialized'}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                paddingTop: 16,
+              }}
+            >
+              <button
+                onClick={() => {
+                  setStudentToRemove(selectedStudent);
+                }}
+                className="dash-btn-danger"
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <Trash2 size={14} /> Remove Student in Real-Time
+              </button>
+
+              <button
+                onClick={() => setSelectedStudent(null)}
+                className="dash-btn-secondary"
+              >
+                Close Dossier
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: CONFIRM REAL-TIME DELETION */}
+      {studentToRemove && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(2, 6, 23, 0.92)',
+            backdropFilter: 'blur(10px)',
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={() => !isRemoving && setStudentToRemove(null)}
+        >
+          <div
+            style={{
+              backgroundColor: '#0b0f19',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              borderRadius: 16,
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.85), 0 0 35px rgba(239, 68, 68, 0.25)',
+              maxWidth: 480,
+              width: '100%',
+              padding: 24,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ef4444',
+                  flexShrink: 0,
+                }}
+              >
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#f8fafc' }}>
+                  Permanently Remove Student?
+                </h3>
+                <span style={{ fontSize: '0.78rem', color: '#f87171' }}>
+                  Immediate real-time cloud deletion
+                </span>
+              </div>
+            </div>
+
+            <p style={{ color: '#94a3b8', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 16px' }}>
+              Are you sure you want to delete participant{' '}
+              <strong style={{ color: '#f8fafc' }}>"{studentToRemove.name}"</strong>?
+              This will permanently purge their record in real time from{' '}
+              <strong style={{ color: '#38bdf8' }}>Firebase Firestore</strong>, the{' '}
+              <strong style={{ color: '#34d399' }}>MongoDB backend database</strong>, and live attendance logs.
+            </p>
+
+            <div
+              style={{
+                background: 'rgba(15, 23, 42, 0.7)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: 8,
+                padding: '10px 14px',
+                marginBottom: 20,
+                fontSize: '0.82rem',
+              }}
+            >
+              <div style={{ color: '#cbd5e1' }}><strong>Email:</strong> {studentToRemove.email}</div>
+              <div style={{ color: '#cbd5e1', marginTop: 4 }}><strong>College:</strong> {studentToRemove.college || 'JEC'}</div>
+              <div style={{ color: '#cbd5e1', marginTop: 4 }}><strong>Branch:</strong> {studentToRemove.branch || 'CSE'}</div>
+              {studentToRemove.rollNumber && (
+                <div style={{ color: '#cbd5e1', marginTop: 4 }}><strong>Roll No:</strong> {studentToRemove.rollNumber}</div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                onClick={() => setStudentToRemove(null)}
+                disabled={isRemoving}
+                className="dash-btn-secondary"
+                style={{ padding: '8px 16px' }}
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleConfirmRemove}
+                disabled={isRemoving}
+                className="dash-btn-danger"
+                style={{
+                  padding: '8px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  opacity: isRemoving ? 0.7 : 1,
+                  cursor: isRemoving ? 'wait' : 'pointer',
+                }}
+              >
+                {isRemoving ? (
+                  <>
+                    <RefreshCw size={14} className="animate-spin" /> Purging in Real-Time...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={14} /> Confirm Real-Time Removal
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </KineticGrid>
   );
 }

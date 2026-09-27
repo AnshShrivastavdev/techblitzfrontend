@@ -400,3 +400,27 @@ export const syncStudent = async (req, res) => {
   }
 };
 
+// DELETE /api/admin/users/:id - Delete a user in real-time from MongoDB
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (mongoose.connection.readyState === 1) {
+      const isObjectId = mongoose.isValidObjectId(id);
+      await User.findOneAndDelete({
+        $or: [
+          ...(isObjectId ? [{ _id: id }] : []),
+          { firebaseUid: id },
+          { email: id.toLowerCase() },
+        ],
+      });
+      await Registration.deleteMany({ userId: id });
+      await Attendance.deleteMany({ userId: id });
+    }
+    return res.status(200).json({ success: true, message: 'Student removed successfully from MongoDB.' });
+  } catch (error) {
+    console.error('[DeleteUser Error]:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+

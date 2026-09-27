@@ -40,6 +40,7 @@ import {
   updateFAQ,
   deleteFAQ,
   syncStudent,
+  deleteUser,
 } from '../controllers/adminController.js';
 
 const router = express.Router();
@@ -75,6 +76,7 @@ router.get('/certificates/:id/download', requireAuth, downloadCertificate);
 // ==========================================
 router.get('/admin/stats', requireAuth, requireAdmin, getAdminStats);
 router.get('/admin/users', requireAuth, requireAdmin, getAdminUsers);
+router.delete('/admin/users/:id', requireAuth, requireAdmin, deleteUser);
 
 // Workshop Admin CRUD
 router.post('/admin/workshops', requireAuth, requireAdmin, createWorkshop);
