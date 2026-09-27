@@ -2,7 +2,6 @@
 
 import React from 'react';
 import CircularGallery from './CircularGallery';
-import { Sparkles } from 'lucide-react';
 
 const GALLERY_ITEMS = [
   {
@@ -48,10 +47,6 @@ export function GallerySection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10">
         {/* Centralized Section Header */}
         <div className="mb-14 text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-cyan-400/30 bg-cyan-950/20 text-cyan-300 text-xs font-mono tracking-widest mb-3.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            <span>ARCHIVAL LOGS // PHOTO STREAM</span>
-          </div>
           <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black font-sans tracking-tight text-white mb-5 uppercase leading-tight">
             Event Gallery & Visual Archives
           </h2>
@@ -62,11 +57,6 @@ export function GallerySection() {
 
         {/* 3D CircularGallery Interactive Showcase */}
         <div className="flex flex-col items-center w-full">
-          <div className="mb-6 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-neutral-900/80 border border-white/10 text-[11px] font-mono text-cyan-400">
-            <Sparkles size={13} className="text-cyan-400" />
-            <span>DRAG & SCROLL INTERACTIVE 3D CIRCULAR GALLERY • LAST YEAR HIGHLIGHTS</span>
-          </div>
-
           <div style={{ height: '600px', position: 'relative' }} className="w-full">
             <CircularGallery
               items={GALLERY_ITEMS}

@@ -133,18 +133,6 @@ function AuthContent() {
     }
   };
 
-  const fillDemo = (type: 'student' | 'admin') => {
-    setError('');
-    setAuthMode('signin');
-    if (type === 'student') {
-      setSignInEmail('arjun@university.edu');
-      setSignInPassword('student123');
-    } else if (type === 'admin') {
-      setSignInEmail('cosmos.jec@jecjabalpur.ac.in');
-      setSignInPassword('admin123');
-    }
-  };
-
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center px-3 sm:px-4 py-6 sm:py-12 bg-black text-white selection:bg-cyan-500/30">
       {/* Dynamic Shader Lines Background */}
@@ -460,30 +448,6 @@ function AuthContent() {
               </button>
             </form>
           )}
-
-          {/* Demo Credentials Quick-Fill Pill Bar */}
-          <div className="mt-8 pt-6 border-t border-white/10">
-            <div className="flex items-center gap-1.5 text-[10px] font-mono text-neutral-500 tracking-wider mb-2.5 uppercase">
-              <Sparkles className="w-3 h-3 text-cyan-400" />
-              <span>QUICK DEMO ACCREDITATIONS</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => fillDemo('student')}
-                className="px-2.5 py-1 rounded border border-white/10 hover:border-white/30 bg-white/5 text-[10px] font-mono text-neutral-300 hover:text-white transition-colors cursor-pointer"
-              >
-                Delegate Demo
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemo('admin')}
-                className="px-2.5 py-1 rounded border border-white/10 hover:border-white/30 bg-white/5 text-[10px] font-mono text-neutral-300 hover:text-white transition-colors cursor-pointer"
-              >
-                Admin Demo
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
