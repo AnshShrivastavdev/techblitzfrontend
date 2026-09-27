@@ -539,6 +539,10 @@ class App {
     }
   }
   update() {
+    if (!this.isVisible) {
+      this.raf = null;
+      return;
+    }
     this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
     const direction = this.scroll.current > this.scroll.last ? 'right' : 'left';
     if (this.medias) {
@@ -566,8 +570,27 @@ class App {
     window.addEventListener('touchend', this.boundOnTouchUp);
 
     this.container?.addEventListener('keydown', this.boundOnKeyDown);
+
+    if (typeof window !== 'undefined' && 'IntersectionObserver' in window && this.container) {
+      this.observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            const wasVisible = this.isVisible;
+            this.isVisible = entry.isIntersecting;
+            if (this.isVisible && !wasVisible && !this.raf) {
+              this.update();
+            }
+          });
+        },
+        { rootMargin: '250px' }
+      );
+      this.observer.observe(this.container);
+    }
   }
   destroy() {
+    if (this.observer) {
+      this.observer.disconnect();
+    }
     window.cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.boundOnResize);
     this.container?.removeEventListener('wheel', this.boundOnWheel);

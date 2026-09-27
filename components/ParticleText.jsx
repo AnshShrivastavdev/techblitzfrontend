@@ -139,7 +139,14 @@ const ParticleText = ({
       ctx.fill();
     };
 
+    let isVisible = true;
+
     const render = now => {
+      if (!isVisible) {
+        animationFrame = null;
+        return;
+      }
+
       ctx.clearRect(0, 0, width, height);
 
       if (glow && !reducedMotion) {
@@ -202,7 +209,7 @@ const ParticleText = ({
     };
 
     const ensureRenderLoop = () => {
-      if (animationFrame === null) {
+      if (animationFrame === null && isVisible) {
         animationFrame = window.requestAnimationFrame(render);
       }
     };
@@ -282,7 +289,7 @@ const ParticleText = ({
         }
       }
 
-      const maxParticles = Math.max(900, Math.min(5200, Math.floor((width * height) / 90)));
+      const maxParticles = Math.max(600, Math.min(2200, Math.floor((width * height) / 110)));
       const stride = Math.max(1, Math.ceil(targets.length / maxParticles));
       const baseRgb = hexToRgb(color);
       const highlightRgb = hexToRgb(highlightColor);
@@ -373,11 +380,30 @@ const ParticleText = ({
 
     const resizeObserver = new ResizeObserver(queueSample);
     resizeObserver.observe(container);
+
+    let visibilityObserver = null;
+    if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
+      visibilityObserver = new IntersectionObserver(
+        entries => {
+          entries.forEach(entry => {
+            const wasVisible = isVisible;
+            isVisible = entry.isIntersecting;
+            if (isVisible && !wasVisible) {
+              ensureRenderLoop();
+            }
+          });
+        },
+        { rootMargin: '200px' }
+      );
+      visibilityObserver.observe(container);
+    }
+
     sampleText();
 
     return () => {
       buildId += 1;
       resizeObserver.disconnect();
+      if (visibilityObserver) visibilityObserver.disconnect();
       reduceMotionQuery?.removeEventListener('change', handleReduceMotionChange);
       canvas.removeEventListener('pointerenter', handlePointerEnter);
       canvas.removeEventListener('pointermove', handlePointerMove);

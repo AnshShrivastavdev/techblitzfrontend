@@ -314,37 +314,37 @@ export function PhoneHeroSection() {
       const progress = Math.max(0, Math.min(-rect.top / scrollDistance, 1));
       targetProgressRef.current = progress;
 
-      // Visibility toggle only when state changes
-      const isPast = rect.bottom < window.innerHeight * 0.25;
-      const visible = !isPast;
+      // Visibility check: hero is visible if bottom > 0 and top < window.innerHeight
+      const visible = rect.bottom > 0 && rect.top < window.innerHeight;
       if (visible !== isHeroVisibleRef.current) {
         isHeroVisibleRef.current = visible;
         setIsHeroVisible(visible);
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    // Sync with global Lenis instance if available
+    // Single unified scroll listener
     const lenisInstance = typeof window !== 'undefined' ? window.__lenis : null;
     if (lenisInstance) {
       lenisInstance.on('scroll', handleScroll);
+    } else {
+      window.addEventListener('scroll', handleScroll, { passive: true });
     }
-
     handleScroll();
 
     let isRunning = true;
     const tick = () => {
       if (!isRunning) return;
 
-      // Snappy and responsive lerping (0.5 factor for ultra-fluid scrubbing)
-      const diff = targetProgressRef.current - currentProgressRef.current;
-      if (Math.abs(diff) > 0.0001) {
-        currentProgressRef.current += diff * 0.5;
-        renderFrameAtProgress(currentProgressRef.current);
-      } else if (currentProgressRef.current !== targetProgressRef.current) {
-        currentProgressRef.current = targetProgressRef.current;
-        renderFrameAtProgress(currentProgressRef.current);
+      // Only scrub and render canvas frames if the hero section is in the viewport
+      if (isHeroVisibleRef.current) {
+        const diff = targetProgressRef.current - currentProgressRef.current;
+        if (Math.abs(diff) > 0.0001) {
+          currentProgressRef.current += diff * 0.85;
+          renderFrameAtProgress(currentProgressRef.current);
+        } else if (currentProgressRef.current !== targetProgressRef.current) {
+          currentProgressRef.current = targetProgressRef.current;
+          renderFrameAtProgress(currentProgressRef.current);
+        }
       }
 
       rafIdRef.current = requestAnimationFrame(tick);
@@ -354,9 +354,10 @@ export function PhoneHeroSection() {
 
     return () => {
       isRunning = false;
-      window.removeEventListener('scroll', handleScroll);
       if (lenisInstance) {
         lenisInstance.off('scroll', handleScroll);
+      } else {
+        window.removeEventListener('scroll', handleScroll);
       }
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };

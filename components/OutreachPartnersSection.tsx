@@ -174,10 +174,7 @@ export function OutreachPartnersSection() {
           {OUTREACH_PARTNERS.map((partner, index) => (
             <div
               key={partner.id}
-              className="group relative rounded-2xl border border-white/10 bg-neutral-950/70 p-6 sm:p-7 flex flex-col justify-between hover:border-cyan-400/50 hover:bg-neutral-900/60 transition-all duration-300 backdrop-blur-xl shadow-xl hover:shadow-[0_12px_35px_rgba(6,182,212,0.15)] overflow-hidden"
-              style={{
-                animation: `floatPartner 6s ease-in-out ${(index * 0.45).toFixed(2)}s infinite alternate`,
-              }}
+              className="group relative rounded-2xl border border-white/10 bg-neutral-950/80 p-6 sm:p-7 flex flex-col justify-between hover:border-cyan-400/50 hover:bg-neutral-900/80 hover:-translate-y-1.5 transition-all duration-300 shadow-xl hover:shadow-[0_12px_35px_rgba(6,182,212,0.15)] overflow-hidden will-change-transform transform-gpu"
             >
               {/* Subtle card ambient highlight */}
               <div className="absolute -top-16 -right-16 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl group-hover:bg-cyan-500/20 transition-all duration-500 pointer-events-none" />
@@ -238,21 +235,6 @@ export function OutreachPartnersSection() {
           ))}
         </div>
       </div>
-
-      {/* Floating Keyframes Definition in Scoped Style */}
-      <style jsx global>{`
-        @keyframes floatPartner {
-          0% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-8px);
-          }
-          100% {
-            transform: translateY(0px);
-          }
-        }
-      `}</style>
     </section>
   );
 }

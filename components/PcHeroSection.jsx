@@ -440,19 +440,20 @@ export function PcHeroSection() {
       const progress = Math.max(0, Math.min(-rect.top / scrollDistance, 1));
       targetProgressRef.current = progress;
 
-      // Visibility toggle only when state changes
-      const isPast = rect.bottom < window.innerHeight * 0.4;
-      const visible = !isPast;
+      // Visibility check: hero is visible if bottom > 0 and top < window.innerHeight
+      const visible = rect.bottom > 0 && rect.top < window.innerHeight;
       if (visible !== isHeroVisibleRef.current) {
         isHeroVisibleRef.current = visible;
         setIsHeroVisible(visible);
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    // Single unified scroll listener to prevent redundant duplicate computations
     const lenisInstance = typeof window !== 'undefined' ? window.__lenis : null;
     if (lenisInstance) {
       lenisInstance.on('scroll', handleScroll);
+    } else {
+      window.addEventListener('scroll', handleScroll, { passive: true });
     }
     handleScroll();
 
@@ -460,13 +461,17 @@ export function PcHeroSection() {
     const tick = () => {
       if (!isRunning) return;
 
-      const diff = targetProgressRef.current - currentProgressRef.current;
-      if (Math.abs(diff) > 0.00005) {
-        currentProgressRef.current += diff * 0.5;
-        renderFrameAtProgress(currentProgressRef.current);
-      } else if (currentProgressRef.current !== targetProgressRef.current) {
-        currentProgressRef.current = targetProgressRef.current;
-        renderFrameAtProgress(currentProgressRef.current);
+      // Only scrub and render canvas frames if the hero section is actually in the viewport
+      if (isHeroVisibleRef.current) {
+        const diff = targetProgressRef.current - currentProgressRef.current;
+        if (Math.abs(diff) > 0.00005) {
+          // Snappy, ultra-responsive 0.85 tracking - eliminates muddy delayed lag
+          currentProgressRef.current += diff * 0.85;
+          renderFrameAtProgress(currentProgressRef.current);
+        } else if (currentProgressRef.current !== targetProgressRef.current) {
+          currentProgressRef.current = targetProgressRef.current;
+          renderFrameAtProgress(currentProgressRef.current);
+        }
       }
 
       rafIdRef.current = requestAnimationFrame(tick);
@@ -476,9 +481,10 @@ export function PcHeroSection() {
 
     return () => {
       isRunning = false;
-      window.removeEventListener('scroll', handleScroll);
       if (lenisInstance) {
         lenisInstance.off('scroll', handleScroll);
+      } else {
+        window.removeEventListener('scroll', handleScroll);
       }
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
