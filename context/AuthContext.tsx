@@ -54,8 +54,10 @@ function formatAuthError(error: any): string {
       return 'Google sign-in window was closed before completion. Please try again.';
     case 'auth/popup-blocked':
       return 'Google sign-in popup was blocked by your browser. Please allow popups or use Email & Password.';
-    case 'auth/unauthorized-domain':
-      return 'Domain not authorized in Firebase Console. Please add this domain under Firebase Console > Authentication > Settings > Authorized Domains, or sign in with Email & Password.';
+    case 'auth/unauthorized-domain': {
+      const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'techblitzfrontend.vercel.app';
+      return `Domain (${currentHost}) is not authorized for Google OAuth in Firebase Console. Please add "${currentHost}" under Firebase Console > Authentication > Settings > Authorized Domains, or sign in below with Email & Password.`;
+    }
     case 'auth/operation-not-allowed':
       return 'Email/Password sign-in provider is disabled in Firebase Console. Please enable Email/Password under Firebase Authentication > Sign-in method.';
     case 'auth/too-many-requests':

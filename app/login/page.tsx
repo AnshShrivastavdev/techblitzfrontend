@@ -174,9 +174,25 @@ function AuthContent() {
         <div className="w-full rounded-2xl border border-white/15 bg-neutral-950/90 backdrop-blur-2xl p-4 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.9)]">
           {/* Error & Success Banners */}
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-950/40 border border-red-500/40 text-xs font-mono text-red-300 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-              <span>{error}</span>
+            <div className="mb-4 p-3.5 rounded-lg bg-red-950/50 border border-red-500/50 text-xs font-mono text-red-200 flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                <span className="font-semibold leading-relaxed">{error}</span>
+              </div>
+              {error.includes('authorized') && (
+                <div className="pt-2 border-t border-red-500/20 text-[11px] text-neutral-300">
+                  <span className="text-cyan-300 font-bold">Quick Fix for Admin:</span> Open{' '}
+                  <a
+                    href="https://console.firebase.google.com/project/techblitz-2nd-edition/authentication/settings"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline text-cyan-400 hover:text-cyan-200"
+                  >
+                    Firebase Console &gt; Authorized Domains
+                  </a>{' '}
+                  and add this domain. Students can also sign in directly below with <strong>Email &amp; Password</strong>!
+                </div>
+              )}
             </div>
           )}
 
