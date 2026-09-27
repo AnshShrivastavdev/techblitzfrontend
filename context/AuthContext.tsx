@@ -8,6 +8,7 @@ import {
   getUserById,
   isAdminEmail,
   upsertUser,
+  getAllUsers,
 } from '@/services/storageService';
 import { syncStudentToCloud } from '@/services/realtimeUserService';
 import {
@@ -33,6 +34,38 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const SESSION_KEY = 'techblitz_session';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://techblitzfrontend.onrender.com/api';
+
+function formatAuthError(error: any): string {
+  const code = error?.code || '';
+  switch (code) {
+    case 'auth/invalid-credential':
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+      return 'Invalid email or password. Please verify your credentials or register for an account.';
+    case 'auth/email-already-in-use':
+      return 'This email address is already registered. Please sign in with your password or use Google Sign-In.';
+    case 'auth/weak-password':
+      return 'Password is too weak. Please use at least 6 characters.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/popup-closed-by-user':
+      return 'Google sign-in window was closed before completion. Please try again.';
+    case 'auth/popup-blocked':
+      return 'Google sign-in popup was blocked by your browser. Please allow popups or use Email & Password.';
+    case 'auth/unauthorized-domain':
+      return 'Domain not authorized in Firebase Console. Please add this domain under Firebase Console > Authentication > Settings > Authorized Domains, or sign in with Email & Password.';
+    case 'auth/operation-not-allowed':
+      return 'Email/Password sign-in provider is disabled in Firebase Console. Please enable Email/Password under Firebase Authentication > Sign-in method.';
+    case 'auth/too-many-requests':
+      return 'Access temporarily restricted due to many failed attempts. Please try again later.';
+    case 'auth/network-request-failed':
+      return 'Network connection failed. Please check your internet connection.';
+    default:
+      return error?.message || 'Authentication failed. Please verify your details.';
+  }
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -105,16 +138,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function login(email: string, password?: string) {
+    const cleanEmail = email.toLowerCase().trim();
+
     // 1. First attempt real Firebase Authentication if password provided
     if (password && auth) {
       try {
-        const cred = await signInWithEmailAndPassword(auth, email, password);
+        const cred = await signInWithEmailAndPassword(auth, cleanEmail, password);
         const fbUser = cred.user;
-        const role: 'student' | 'admin' = isAdminEmail(email) ? 'admin' : 'student';
+        const role: 'student' | 'admin' = isAdminEmail(cleanEmail) ? 'admin' : 'student';
         const userObj: User = {
           id: fbUser.uid,
-          name: fbUser.displayName || email.split('@')[0],
-          email: fbUser.email || email,
+          name: fbUser.displayName || cleanEmail.split('@')[0],
+          email: fbUser.email || cleanEmail,
           role,
           college: 'Jabalpur Engineering College',
           createdAt: new Date().toISOString(),
@@ -125,21 +160,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         persistSession(userObj);
         return { success: true, user: userObj };
       } catch (fbErr: any) {
-        // If Firebase error is not user-not-found, or if local mock fallback is desired:
         console.warn('[Firebase Auth] Sign in notice:', fbErr?.code || fbErr?.message);
-        // Fallback to local storage demo accounts if credentials match
-        const localRes = loginUser(email, password);
+        
+        // 2. Check local registered accounts
+        const localRes = loginUser(cleanEmail, password);
         if (localRes.success && localRes.user) {
           setUser(localRes.user);
           persistSession(localRes.user);
+          syncStudentToCloud(localRes.user);
           return localRes;
         }
-        return { success: false, error: fbErr?.message || 'Invalid email or password' };
+
+        // 3. Fallback: Check if account exists locally in storage
+        const allUsers = getAllUsers();
+        const existing = allUsers.find((u) => u.email.toLowerCase() === cleanEmail);
+        if (existing && (!existing.password || existing.password === password)) {
+          setUser(existing);
+          persistSession(existing);
+          return { success: true, user: existing };
+        }
+
+        return { success: false, error: formatAuthError(fbErr) };
       }
     }
 
     // Fallback to local mock accounts
-    const result = loginUser(email, password);
+    const result = loginUser(cleanEmail, password);
     if (result.success && result.user) {
       setUser(result.user);
       persistSession(result.user);
@@ -148,21 +194,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function register(userData: Partial<User>) {
+    if (!userData.email) return { success: false, error: 'Email is required.' };
+    const cleanEmail = userData.email.toLowerCase().trim();
+
     // 1. Try real Firebase Authentication creation
-    if (userData.email && userData.password && auth) {
+    if (userData.password && auth) {
       try {
-        const cred = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
+        const cred = await createUserWithEmailAndPassword(auth, cleanEmail, userData.password);
         const fbUser = cred.user;
-        const role: 'student' | 'admin' = isAdminEmail(userData.email) ? 'admin' : 'student';
+        const role: 'student' | 'admin' = isAdminEmail(cleanEmail) ? 'admin' : 'student';
         const userObj: User = {
           id: fbUser.uid,
-          name: userData.name || fbUser.displayName || userData.email.split('@')[0],
-          email: fbUser.email || userData.email,
+          name: userData.name || fbUser.displayName || cleanEmail.split('@')[0],
+          email: fbUser.email || cleanEmail,
           role,
           college: userData.college || 'Jabalpur Engineering College',
           branch: userData.branch || 'CSE',
           semester: userData.semester || '1st',
           rollNumber: userData.rollNumber || '',
+          phone: userData.phone || '',
           createdAt: new Date().toISOString(),
         };
 
@@ -174,12 +224,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: true, user: userObj };
       } catch (fbErr: any) {
         console.warn('[Firebase Auth] Registration notice:', fbErr?.code || fbErr?.message);
-        return { success: false, error: fbErr?.message || 'Failed to create account with Firebase' };
+        
+        // If email already in use, inform user clearly
+        if (fbErr?.code === 'auth/email-already-in-use') {
+          return {
+            success: false,
+            error: 'This email is already registered. Please sign in with your password, or use Google Sign-In.',
+          };
+        }
+
+        // If Firebase threw operation-not-allowed or network failure, register student via database & cloud
+        if (
+          fbErr?.code === 'auth/operation-not-allowed' ||
+          fbErr?.code === 'auth/network-request-failed' ||
+          fbErr?.code === 'auth/internal-error'
+        ) {
+          const role: 'student' | 'admin' = isAdminEmail(cleanEmail) ? 'admin' : 'student';
+          const localUser: User = {
+            id: 'std_' + Math.random().toString(36).slice(2, 9),
+            name: userData.name || cleanEmail.split('@')[0],
+            email: cleanEmail,
+            password: userData.password,
+            role,
+            college: userData.college || 'Jabalpur Engineering College',
+            branch: userData.branch || 'CSE',
+            semester: userData.semester || '1st',
+            rollNumber: userData.rollNumber || '',
+            phone: userData.phone || '',
+            createdAt: new Date().toISOString(),
+          };
+          upsertUser(localUser);
+          syncStudentToCloud(localUser);
+          setUser(localUser);
+          persistSession(localUser);
+          return { success: true, user: localUser };
+        }
+
+        return { success: false, error: formatAuthError(fbErr) };
       }
     }
 
     // Fallback to local storage
-    const result = registerStudent(userData);
+    const result = registerStudent({ ...userData, email: cleanEmail });
     if (result.success && result.user) {
       syncStudentToCloud(result.user);
       setUser(result.user);
@@ -192,11 +278,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const cred = await signInWithPopup(auth, googleProvider);
       const fbUser = cred.user;
-      const role: 'student' | 'admin' = isAdminEmail(fbUser.email || '') ? 'admin' : 'student';
+      const cleanEmail = (fbUser.email || '').toLowerCase().trim();
+      const role: 'student' | 'admin' = isAdminEmail(cleanEmail) ? 'admin' : 'student';
       const userObj: User = {
         id: fbUser.uid,
-        name: fbUser.displayName || fbUser.email?.split('@')[0] || 'TechBlitz Participant',
-        email: fbUser.email || '',
+        name: fbUser.displayName || cleanEmail.split('@')[0] || 'TechBlitz Participant',
+        email: cleanEmail,
         role,
         college: 'Jabalpur Engineering College',
         createdAt: new Date().toISOString(),
@@ -207,8 +294,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       persistSession(userObj);
       return { success: true, user: userObj };
     } catch (err: any) {
-      console.error('[Firebase Auth] Google sign in error:', err);
-      return { success: false, error: err?.message || 'Google sign-in was cancelled or failed' };
+      console.error('[Firebase Auth] Google sign in error:', err?.code, err?.message);
+      return { success: false, error: formatAuthError(err) };
     }
   }
 

@@ -109,6 +109,7 @@ function AuthContent() {
       name: createName,
       email: createEmail,
       password: createPassword,
+      phone: createPhone,
       college: createCollege,
       branch: createBranch,
       semester: createSemester,
@@ -130,6 +131,12 @@ function AuthContent() {
       }
     } else {
       setError(result.error || 'Registration failed.');
+      if (result.error?.includes('already registered')) {
+        setSignInEmail(createEmail);
+        setTimeout(() => {
+          setAuthMode('signin');
+        }, 2200);
+      }
     }
   };
 
