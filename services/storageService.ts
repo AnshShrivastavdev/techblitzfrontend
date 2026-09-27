@@ -123,122 +123,12 @@ const SEED_DATA: DatabaseSchema = {
       rollNumber: 'ADMIN-01',
       createdAt: '2026-08-01T10:00:00Z',
     },
-    {
-      id: 'student-001',
-      name: 'Arjun Patel',
-      email: 'arjun@university.edu',
-      password: 'student123',
-      role: 'student',
-      college: 'National Institute of Technology',
-      branch: 'Computer Science',
-      semester: '6th',
-      rollNumber: 'CS2023042',
-      createdAt: '2026-08-10T10:00:00Z',
-    },
-    {
-      id: 'student-002',
-      name: 'Priya Sharma',
-      email: 'priya@college.edu',
-      password: 'student123',
-      role: 'student',
-      college: 'Indian Institute of Technology',
-      branch: 'Information Technology',
-      semester: '4th',
-      rollNumber: 'IT2024018',
-      createdAt: '2026-08-11T10:00:00Z',
-    },
-    {
-      id: 'student-003',
-      name: 'Rohan Mehra',
-      email: 'rohan@institute.edu',
-      password: 'student123',
-      role: 'student',
-      college: 'Birla Institute of Technology',
-      branch: 'Electronics',
-      semester: '5th',
-      rollNumber: 'EC2023097',
-      createdAt: '2026-08-12T10:00:00Z',
-    },
-    {
-      id: 'student-004',
-      name: 'Neha Gupta',
-      email: 'neha@techcollege.edu',
-      password: 'student123',
-      role: 'student',
-      college: 'VIT University',
-      branch: 'Computer Science',
-      semester: '3rd',
-      rollNumber: 'CS2025033',
-      createdAt: '2026-08-13T10:00:00Z',
-    },
-    {
-      id: 'student-005',
-      name: 'Karan Singh',
-      email: 'karan@engineering.edu',
-      password: 'student123',
-      role: 'student',
-      college: 'Delhi Technological University',
-      branch: 'Mechanical',
-      semester: '7th',
-      rollNumber: 'ME2022056',
-      createdAt: '2026-08-14T10:00:00Z',
-    },
   ],
-
-  speakers: [
-    {
-      id: 'sp-001',
-      userId: 'speaker-001',
-      bio: 'AI/ML Research Scientist with 10+ years of experience in deep learning and neural architecture search. Published 30+ papers in top-tier conferences.',
-      title: 'Senior Research Scientist',
-      company: 'DeepMind Research Lab',
-      avatarUrl: '',
-      portfolioUrl: 'https://sarahchen.ai',
-      linkedinUrl: 'https://linkedin.com/in/sarahchen',
-      githubUrl: 'https://github.com/sarahchen',
-      availabilityStatus: 'available',
-    },
-    {
-      id: 'sp-002',
-      userId: 'speaker-002',
-      bio: 'Cloud Architecture specialist and distributed systems engineer. Built scalable infrastructure serving 100M+ users. AWS Solutions Architect Professional.',
-      title: 'Principal Cloud Architect',
-      company: 'Stellar Cloud Systems',
-      avatarUrl: '',
-      portfolioUrl: 'https://alexrivera.dev',
-      linkedinUrl: 'https://linkedin.com/in/alexrivera',
-      githubUrl: 'https://github.com/alexrivera',
-      availabilityStatus: 'available',
-    },
-  ],
-
+  speakers: [],
   workshops: [],
   registrations: [],
   attendanceLogs: [],
-  certificates: [
-    {
-      id: 'cert-001',
-      certificateNumber: 'CERT-2026-001',
-      userId: 'student-001',
-      recipientName: 'Arjun Patel',
-      workshopId: 'ws-004',
-      workshopTitle: 'Offensive Security & Penetration Testing',
-      issuedAt: '2026-09-02T10:00:00Z',
-      issueDate: '2026-09-02T10:00:00Z',
-      verificationUrl: '/verify/CERT-2026-001',
-    },
-    {
-      id: 'cert-002',
-      certificateNumber: 'CERT-2026-002',
-      userId: 'student-002',
-      recipientName: 'Priya Sharma',
-      workshopId: 'ws-004',
-      workshopTitle: 'Offensive Security & Penetration Testing',
-      issuedAt: '2026-09-02T10:00:00Z',
-      issueDate: '2026-09-02T10:00:00Z',
-      verificationUrl: '/verify/CERT-2026-002',
-    },
-  ],
+  certificates: [],
 
   gallery: [
     { id: 'gal-001', title: 'AI Workshop Keynote', category: 'Workshops', imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600' },
@@ -254,6 +144,11 @@ const SEED_DATA: DatabaseSchema = {
   ],
 };
 
+// Known dummy ID filters to purge from existing local storage
+const DUMMY_USER_IDS = new Set(['student-001', 'student-002', 'student-003', 'student-004', 'student-005']);
+const DUMMY_CERT_IDS = new Set(['cert-001', 'cert-002']);
+const DUMMY_WS_IDS = new Set(['ws-001', 'ws-002', 'ws-003', 'ws-004']);
+
 // ------- Core Storage Functions -------
 function getDB(): DatabaseSchema {
   if (typeof window === 'undefined') {
@@ -265,7 +160,29 @@ function getDB(): DatabaseSchema {
     return JSON.parse(JSON.stringify(SEED_DATA));
   }
   try {
-    return JSON.parse(raw);
+    const parsed: DatabaseSchema = JSON.parse(raw);
+    let mutated = false;
+
+    // Purge legacy dummy users if present
+    if (parsed.users && parsed.users.some(u => DUMMY_USER_IDS.has(u.id))) {
+      parsed.users = parsed.users.filter(u => !DUMMY_USER_IDS.has(u.id));
+      mutated = true;
+    }
+    // Purge legacy dummy certificates if present
+    if (parsed.certificates && parsed.certificates.some(c => DUMMY_CERT_IDS.has(c.id))) {
+      parsed.certificates = parsed.certificates.filter(c => !DUMMY_CERT_IDS.has(c.id));
+      mutated = true;
+    }
+    // Purge legacy dummy workshops if present
+    if (parsed.workshops && parsed.workshops.some(w => DUMMY_WS_IDS.has(w.id))) {
+      parsed.workshops = parsed.workshops.filter(w => !DUMMY_WS_IDS.has(w.id));
+      mutated = true;
+    }
+
+    if (mutated) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+    }
+    return parsed;
   } catch {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_DATA));
     return JSON.parse(JSON.stringify(SEED_DATA));
@@ -337,6 +254,20 @@ export function updateUserProfile(userId: string, updates: Partial<User>): User 
   db.users[idx] = { ...db.users[idx], ...updates };
   saveDB(db);
   return db.users[idx];
+}
+
+export function upsertUser(user: User): User {
+  const db = getDB();
+  const idx = db.users.findIndex(
+    (u) => (user.id && u.id === user.id) || (user.email && u.email.toLowerCase() === user.email.toLowerCase().trim())
+  );
+  if (idx !== -1) {
+    db.users[idx] = { ...db.users[idx], ...user };
+  } else {
+    db.users.push(user);
+  }
+  saveDB(db);
+  return user;
 }
 
 // ------- Workshops -------
@@ -605,19 +536,28 @@ export function exportToCSV(data: Record<string, any>[], filename: string): void
   URL.revokeObjectURL(url);
 }
 
-export function exportUsersCSV(): void {
-  const users = getDB().users.map((u) => ({
-    ID: u.id,
-    Name: u.name,
-    Email: u.email,
-    Role: u.role,
-    College: u.college || '',
-    Branch: u.branch || '',
-    Semester: u.semester || '',
-    RollNumber: u.rollNumber || '',
-    Joined: u.createdAt,
+export function exportUsersCSV(): boolean {
+  const users = getDB().users;
+  if (!users || users.length === 0) {
+    if (typeof window !== 'undefined') {
+      alert('No user records available to export.');
+    }
+    return false;
+  }
+  const formattedUsers = users.map((u, idx) => ({
+    'S.No': idx + 1,
+    'User ID': u.id,
+    'Participant Name': u.name,
+    'Email Address': u.email,
+    'Role': u.role.toUpperCase(),
+    'College / Institution': u.college || 'N/A',
+    'Branch / Department': u.branch || 'N/A',
+    'Semester': u.semester || 'N/A',
+    'Roll Number': u.rollNumber || 'N/A',
+    'Registration Date': u.createdAt ? new Date(u.createdAt).toLocaleString('en-IN') : 'N/A',
   }));
-  exportToCSV(users, `TechBlitz_Users_${Date.now()}.csv`);
+  exportToCSV(formattedUsers, `TechBlitz_Students_${new Date().toISOString().slice(0, 10)}.csv`);
+  return true;
 }
 
 export function exportAttendanceCSV(): void {

@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { KineticGrid } from '@/components/ui/kinetic-grid';
-import ElectricBorder from '@/components/ui/ElectricBorder';
 import {
   User,
   Workshop,
@@ -40,6 +39,7 @@ import {
   LogOut,
   Layers,
   FileSpreadsheet,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function DashboardAdmin() {
@@ -481,88 +481,115 @@ export default function DashboardAdmin() {
             )}
 
             {/* Workshops Grid */}
-            <div className="dash-grid-cards">
-              {workshops.map((ws) => {
-                const borderColor = ws.status === 'live' ? '#00d4ff' : '#38bdf8';
-                return (
-                  <ElectricBorder
-                    key={ws.id}
-                    color={borderColor}
-                    speed={ws.status === 'live' ? 1.4 : 0.9}
-                    chaos={ws.status === 'live' ? 0.16 : 0.1}
-                    borderRadius={16}
-                    style={{ height: '100%' }}
-                  >
-                    <div className="dash-card" style={{ height: '100%', margin: 0 }}>
-                      <div className="dash-card__top">
-                        <span className={`dash-badge dash-badge--${ws.status}`}>
-                          {ws.status === 'live' && <span className="dash-pulse-dot" />}
-                          {ws.status.toUpperCase()}
-                        </span>
-                        <span className="dash-category-tag">{ws.track || 'Cosmos Track'}</span>
+            {workshops.length === 0 ? (
+              <div
+                className="dash-empty-state"
+                style={{
+                  textAlign: 'center',
+                  padding: '48px 24px',
+                  background: 'rgba(255,255,255,0.02)',
+                  borderRadius: 16,
+                  border: '1px dashed rgba(255,255,255,0.1)',
+                }}
+              >
+                <Calendar size={36} color="#64748b" style={{ margin: '0 auto 12px' }} />
+                <h4 style={{ color: '#f8fafc', fontSize: '1.1rem', marginBottom: 6 }}>No Workshops Scheduled Yet</h4>
+                <p style={{ color: '#94a3b8', fontSize: '0.875rem', maxWidth: 460, margin: '0 auto 16px' }}>
+                  Click &ldquo;+ Schedule Workshop&rdquo; above to publish sessions. Registered participants will receive access to the Google Meet link and live telemetry.
+                </p>
+                <button onClick={() => setShowCreateWs(true)} className="dash-btn-primary">
+                  <Plus size={15} /> Schedule First Workshop
+                </button>
+              </div>
+            ) : (
+              <div className="dash-grid-cards">
+                {workshops.map((ws) => (
+                  <div key={ws.id} className="dash-card" style={{ height: '100%', margin: 0 }}>
+                    <div className="dash-card__top">
+                      <span className={`dash-badge dash-badge--${ws.status}`}>
+                        {ws.status === 'live' && <span className="dash-pulse-dot" />}
+                        {ws.status.toUpperCase()}
+                      </span>
+                      <span className="dash-category-tag">{ws.track || 'Cosmos Track'}</span>
+                    </div>
+
+                    <h4 className="dash-card__title">{ws.title}</h4>
+                    <p className="dash-card__desc">Speaker: {ws.speakerName || 'Dr. Sarah Chen'}</p>
+
+                    <div className="dash-card__meta">
+                      <div>
+                        <Clock size={14} /> {ws.minAttendanceMinutes * 3 || 90} min
                       </div>
-
-                      <h4 className="dash-card__title">{ws.title}</h4>
-                      <p className="dash-card__desc">Speaker: {ws.speakerName || 'Dr. Sarah Chen'}</p>
-
-                      <div className="dash-card__meta">
-                        <div>
-                          <Clock size={14} /> {ws.minAttendanceMinutes * 3 || 90} min
-                        </div>
-                        <div>
-                          <Calendar size={14} />{' '}
-                          {ws.scheduledStartTime
-                            ? new Date(ws.scheduledStartTime).toLocaleDateString()
-                            : 'September 2026'}
-                        </div>
-                      </div>
-
-                      {/* Admin State Transitions */}
-                      <div className="dash-card__footer" style={{ flexDirection: 'column', gap: 8 }}>
-                        <div style={{ display: 'flex', gap: 6, width: '100%' }}>
-                          {ws.status !== 'live' ? (
-                            <button
-                              onClick={() => handleUpdateStatus(ws.id, 'live')}
-                              className="dash-btn-telemetry"
-                              style={{ flex: 1 }}
-                            >
-                              <Play size={14} /> Set Live
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleUpdateStatus(ws.id, 'completed')}
-                              className="dash-btn-secondary"
-                              style={{ flex: 1 }}
-                            >
-                              <Square size={14} /> Complete
-                            </button>
-                          )}
-
-                          <button
-                            onClick={() => handleDeleteWorkshop(ws.id)}
-                            className="dash-btn-danger"
-                            title="Delete Workshop"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                      <div>
+                        <Calendar size={14} />{' '}
+                        {ws.scheduledStartTime
+                          ? new Date(ws.scheduledStartTime).toLocaleDateString()
+                          : 'September 2026'}
                       </div>
                     </div>
-                  </ElectricBorder>
-                );
-              })}
-            </div>
+
+                    {/* Admin State Transitions */}
+                    <div className="dash-card__footer" style={{ flexDirection: 'column', gap: 8 }}>
+                      <div style={{ display: 'flex', gap: 6, width: '100%' }}>
+                        {ws.status !== 'live' ? (
+                          <button
+                            onClick={() => handleUpdateStatus(ws.id, 'live')}
+                            className="dash-btn-telemetry"
+                            style={{ flex: 1 }}
+                          >
+                            <Play size={14} /> Set Live
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleUpdateStatus(ws.id, 'completed')}
+                            className="dash-btn-secondary"
+                            style={{ flex: 1 }}
+                          >
+                            <Square size={14} /> Complete
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => handleDeleteWorkshop(ws.id)}
+                          className="dash-btn-danger"
+                          title="Delete Workshop"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* MODULE 3: USER DIRECTORY */}
+        {/* MODULE 3: USER DIRECTORY (REAL-TIME STUDENT DETAILS & EXPORT CSV) */}
         {module === 'users' && (
           <div className="dash-content-pane">
             <div className="dash-pane-header">
-              <h3>Platform User Directory</h3>
-              <button onClick={exportUsersCSV} className="dash-btn-secondary">
-                <FileSpreadsheet size={15} /> Export CSV
-              </button>
+              <div>
+                <h3>Platform Real-Time User Directory</h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: '4px 0 0' }}>
+                  Live synchronized roster of authenticated delegates and students
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => {
+                    loadAll();
+                    showToast('success', 'Real-time user directory refreshed.');
+                  }}
+                  className="dash-btn-secondary"
+                  title="Reload real-time student details"
+                >
+                  <RefreshCw size={14} /> Refresh
+                </button>
+                <button onClick={exportUsersCSV} className="dash-btn-primary">
+                  <FileSpreadsheet size={15} /> Export Students CSV
+                </button>
+              </div>
             </div>
 
             {/* Filters */}
@@ -574,7 +601,7 @@ export default function DashboardAdmin() {
                 />
                 <input
                   type="text"
-                  placeholder="Search user name or email..."
+                  placeholder="Search student name, email, roll number or college..."
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
                   style={{ paddingLeft: 36, width: '100%' }}
@@ -590,7 +617,6 @@ export default function DashboardAdmin() {
               >
                 <option value="all">All Roles</option>
                 <option value="student">Students</option>
-                <option value="speaker">Speakers</option>
                 <option value="admin">Admins</option>
               </select>
             </div>
@@ -599,30 +625,55 @@ export default function DashboardAdmin() {
               <table className="dash-table">
                 <thead>
                   <tr>
-                    <th>User</th>
+                    <th>Participant Name & Email</th>
                     <th>Role</th>
-                    <th>Institution / Branch</th>
-                    <th>Roll / Semester</th>
-                    <th>Joined</th>
+                    <th>College / Institution</th>
+                    <th>Branch & Semester</th>
+                    <th>Roll Number</th>
+                    <th>Registration Date</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((u) => (
-                    <tr key={u.id}>
-                      <td>
-                        <strong>{u.name}</strong>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{u.email}</div>
+                  {filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '36px 16px', color: '#94a3b8' }}>
+                        No registered students found matching the current search criteria. Live participant records will appear automatically as delegates sign in or register.
                       </td>
-                      <td>
-                        <span className={`dash-badge dash-badge--${u.role}`}>
-                          {u.role.toUpperCase()}
-                        </span>
-                      </td>
-                      <td>{u.college || u.branch || 'Cosmos Member'}</td>
-                      <td>{u.semester ? `${u.semester} • ${u.rollNumber}` : '—'}</td>
-                      <td>{new Date(u.createdAt).toLocaleDateString()}</td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredUsers.map((u) => (
+                      <tr key={u.id}>
+                        <td>
+                          <strong>{u.name}</strong>
+                          <div style={{ fontSize: '0.75rem', color: '#38bdf8' }}>{u.email}</div>
+                        </td>
+                        <td>
+                          <span className={`dash-badge dash-badge--${u.role}`}>
+                            {u.role.toUpperCase()}
+                          </span>
+                        </td>
+                        <td>{u.college || 'Jabalpur Engineering College'}</td>
+                        <td>
+                          {u.branch || 'CSE'}
+                          {u.semester ? ` • Sem ${u.semester}` : ''}
+                        </td>
+                        <td>
+                          <span style={{ fontFamily: 'monospace', color: '#cbd5e1' }}>
+                            {u.rollNumber || '—'}
+                          </span>
+                        </td>
+                        <td>
+                          {u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-IN', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : '—'}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -651,25 +702,33 @@ export default function DashboardAdmin() {
                   </tr>
                 </thead>
                 <tbody>
-                  {attendance.map((att) => {
-                    const student = users.find((u) => u.id === att.userId);
-                    const ws = workshops.find((w) => w.id === att.workshopId);
-                    return (
-                      <tr key={att.id}>
-                        <td>{student?.name || att.userId}</td>
-                        <td>{ws?.title || att.workshopId}</td>
-                        <td>{att.totalMinutesPresent} mins</td>
-                        <td>{new Date(att.lastPingAt).toLocaleTimeString()}</td>
-                        <td>
-                          {att.isEligibleForCert ? (
-                            <span style={{ color: '#34d399', fontWeight: 600 }}>✓ Eligible</span>
-                          ) : (
-                            <span style={{ color: '#94a3b8' }}>Accumulating...</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {attendance.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: 'center', padding: '36px 16px', color: '#94a3b8' }}>
+                        No live telemetry heartbeats recorded yet. Heartbeats will log automatically when participants join live broadcasts.
+                      </td>
+                    </tr>
+                  ) : (
+                    attendance.map((att) => {
+                      const student = users.find((u) => u.id === att.userId);
+                      const ws = workshops.find((w) => w.id === att.workshopId);
+                      return (
+                        <tr key={att.id}>
+                          <td>{student?.name || att.userId}</td>
+                          <td>{ws?.title || att.workshopId}</td>
+                          <td>{att.totalMinutesPresent} mins</td>
+                          <td>{new Date(att.lastPingAt).toLocaleTimeString()}</td>
+                          <td>
+                            {att.isEligibleForCert ? (
+                              <span style={{ color: '#34d399', fontWeight: 600 }}>✓ Eligible</span>
+                            ) : (
+                              <span style={{ color: '#94a3b8' }}>Accumulating...</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -686,23 +745,42 @@ export default function DashboardAdmin() {
               </button>
             </div>
 
-            <div className="dash-grid-cards">
-              {certificates.map((c) => (
-                <div key={c.id} className="dash-cert-card">
-                  <div className="dash-cert-badge">Verified Credential</div>
-                  <h4>{c.recipientName}</h4>
-                  <p style={{ color: '#38bdf8', fontSize: '0.85rem' }}>{c.workshopTitle}</p>
-                  <div className="dash-cert-code">ID: {c.certificateNumber || c.id}</div>
-                  <button
-                    onClick={() => downloadCertPDF(c)}
-                    className="dash-btn-secondary"
-                    style={{ width: '100%', marginTop: 10 }}
-                  >
-                    <Download size={14} /> Download PDF
-                  </button>
-                </div>
-              ))}
-            </div>
+            {certificates.length === 0 ? (
+              <div
+                className="dash-empty-state"
+                style={{
+                  textAlign: 'center',
+                  padding: '48px 24px',
+                  background: 'rgba(255,255,255,0.02)',
+                  borderRadius: 16,
+                  border: '1px dashed rgba(255,255,255,0.1)',
+                }}
+              >
+                <Award size={36} color="#64748b" style={{ margin: '0 auto 12px' }} />
+                <h4 style={{ color: '#f8fafc', fontSize: '1.1rem', marginBottom: 6 }}>No Certificates Issued Yet</h4>
+                <p style={{ color: '#94a3b8', fontSize: '0.875rem', maxWidth: 460, margin: '0 auto 16px' }}>
+                  All dummy certificates have been cleared. Authentic digital credentials will appear here once participants complete workshops and satisfy minimum attendance thresholds.
+                </p>
+              </div>
+            ) : (
+              <div className="dash-grid-cards">
+                {certificates.map((c) => (
+                  <div key={c.id} className="dash-cert-card">
+                    <div className="dash-cert-badge">Verified Credential</div>
+                    <h4>{c.recipientName}</h4>
+                    <p style={{ color: '#38bdf8', fontSize: '0.85rem' }}>{c.workshopTitle}</p>
+                    <div className="dash-cert-code">ID: {c.certificateNumber || c.id}</div>
+                    <button
+                      onClick={() => downloadCertPDF(c)}
+                      className="dash-btn-secondary"
+                      style={{ width: '100%', marginTop: 10 }}
+                    >
+                      <Download size={14} /> Download PDF
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>

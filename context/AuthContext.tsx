@@ -7,6 +7,7 @@ import {
   registerStudent,
   getUserById,
   isAdminEmail,
+  upsertUser,
 } from '@/services/storageService';
 import {
   auth,
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
         };
 
+        upsertUser(syncedUser);
         setUser(syncedUser);
         localStorage.setItem(SESSION_KEY, JSON.stringify({ id: syncedUser.id, role: syncedUser.role }));
       } else {
@@ -115,6 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           college: 'Jabalpur Engineering College',
           createdAt: new Date().toISOString(),
         };
+        upsertUser(userObj);
         setUser(userObj);
         persistSession(userObj);
         return { success: true, user: userObj };
@@ -161,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
 
         // Also save to local storage service
-        registerStudent(userObj);
+        upsertUser(userObj);
         setUser(userObj);
         persistSession(userObj);
         return { success: true, user: userObj };
@@ -193,6 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         college: 'Jabalpur Engineering College',
         createdAt: new Date().toISOString(),
       };
+      upsertUser(userObj);
       setUser(userObj);
       persistSession(userObj);
       return { success: true, user: userObj };
