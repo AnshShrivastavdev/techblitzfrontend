@@ -38,11 +38,16 @@ export function PhoneHeroSection() {
   const [loadPercent, setLoadPercent] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Active chapter and telemetry state
+  // Active chapter state
   const [activeChapterIndex, setActiveChapterIndex] = useState(0);
-  const [scrubPercent, setScrubPercent] = useState(0);
-  const [currentFrameNum, setCurrentFrameNum] = useState(1);
   const [isHeroVisible, setIsHeroVisible] = useState(true);
+
+  // Performance refs to bypass React render cycle during 60/120fps touch scrubbing
+  const frameNumRef = useRef(null);
+  const scrubPercentTextRef = useRef(null);
+  const progressBarRef = useRef(null);
+  const lastChapterIdxRef = useRef(0);
+  const isHeroVisibleRef = useRef(true);
 
   // Image cache: single array of 300 images strictly for mobile
   const framesRef = useRef(new Array(MOBILE_FRAME_COUNT));
@@ -111,9 +116,22 @@ export function PhoneHeroSection() {
         chapterIdx = 1;
       }
 
-      setActiveChapterIndex(chapterIdx);
-      setScrubPercent(pct);
-      setCurrentFrameNum(frameNumber);
+      // Only trigger React state change when chapter changes (strictly 3 times across mobile scroll)
+      if (chapterIdx !== lastChapterIdxRef.current) {
+        lastChapterIdxRef.current = chapterIdx;
+        setActiveChapterIndex(chapterIdx);
+      }
+
+      // Fast direct-DOM updates (zero React reconciliation overhead)
+      if (frameNumRef.current) {
+        frameNumRef.current.textContent = String(frameNumber).padStart(3, '0');
+      }
+      if (scrubPercentTextRef.current) {
+        scrubPercentTextRef.current.textContent = `${pct}% COMPLETE`;
+      }
+      if (progressBarRef.current) {
+        progressBarRef.current.style.width = `${pct}%`;
+      }
 
       // Proactively stream adjacent frames
       const bufferStart = Math.max(0, targetFrame - 8);
@@ -296,9 +314,13 @@ export function PhoneHeroSection() {
       const progress = Math.max(0, Math.min(-rect.top / scrollDistance, 1));
       targetProgressRef.current = progress;
 
-      // Visibility toggle when scrolling into lower sections
+      // Visibility toggle only when state changes
       const isPast = rect.bottom < window.innerHeight * 0.25;
-      setIsHeroVisible(!isPast);
+      const visible = !isPast;
+      if (visible !== isHeroVisibleRef.current) {
+        isHeroVisibleRef.current = visible;
+        setIsHeroVisible(visible);
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -315,10 +337,10 @@ export function PhoneHeroSection() {
     const tick = () => {
       if (!isRunning) return;
 
-      // Snappy and responsive lerping (0.4 factor for ultra-fluid scrubbing)
+      // Snappy and responsive lerping (0.5 factor for ultra-fluid scrubbing)
       const diff = targetProgressRef.current - currentProgressRef.current;
       if (Math.abs(diff) > 0.0001) {
-        currentProgressRef.current += diff * 0.4;
+        currentProgressRef.current += diff * 0.5;
         renderFrameAtProgress(currentProgressRef.current);
       } else if (currentProgressRef.current !== targetProgressRef.current) {
         currentProgressRef.current = targetProgressRef.current;
@@ -340,7 +362,7 @@ export function PhoneHeroSection() {
     };
   }, [renderFrameAtProgress]);
 
-  // Tap cue to advance scroll down smoothly
+  // Tap cue to advance scroll down smoothly via Lenis
   const handleScrollDown = () => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -349,10 +371,15 @@ export function PhoneHeroSection() {
 
     // Scroll down by 1 viewport height
     const targetY = window.scrollY + Math.min(window.innerHeight * 0.9, scrollDistance - currentScrolled + 50);
-    window.scrollTo({
-      top: targetY,
-      behavior: 'smooth',
-    });
+    const lenis = typeof window !== 'undefined' ? window.__lenis : null;
+    if (lenis) {
+      lenis.scrollTo(targetY, { duration: 1.0 });
+    } else {
+      window.scrollTo({
+        top: targetY,
+        behavior: 'smooth',
+      });
+    }
   };
 
   const activeChapter = MOBILE_CHAPTERS[activeChapterIndex] || MOBILE_CHAPTERS[0];
@@ -433,7 +460,7 @@ export function PhoneHeroSection() {
               </div>
 
               <div className="bg-black/60 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded font-mono text-[10px] text-neutral-400 tracking-wider pointer-events-auto">
-                FRAME <span className="text-white font-bold">{String(currentFrameNum).padStart(3, '0')}</span> / {MOBILE_FRAME_COUNT}
+                FRAME <span ref={frameNumRef} className="text-white font-bold">001</span> / {MOBILE_FRAME_COUNT}
               </div>
             </div>
 
@@ -446,8 +473,8 @@ export function PhoneHeroSection() {
                   <span className="inline-block bg-white text-black font-mono text-[10px] font-bold px-2 py-0.5 rounded tracking-widest uppercase">
                     {activeChapter.tag}
                   </span>
-                  <span className="font-mono text-[10px] text-neutral-400 tracking-wider">
-                    {scrubPercent}% COMPLETE
+                  <span ref={scrubPercentTextRef} className="font-mono text-[10px] text-neutral-400 tracking-wider">
+                    0% COMPLETE
                   </span>
                 </div>
 
@@ -469,8 +496,9 @@ export function PhoneHeroSection() {
                 {/* Mini Scrub Progress Bar */}
                 <div className="w-full h-1 bg-white/15 rounded-full overflow-hidden pointer-events-none">
                   <div
-                    className="h-full bg-white transition-all duration-75"
-                    style={{ width: `${scrubPercent}%` }}
+                    ref={progressBarRef}
+                    className="h-full bg-white will-change-[width]"
+                    style={{ width: '0%' }}
                   />
                 </div>
 
@@ -480,8 +508,14 @@ export function PhoneHeroSection() {
                     href="#register"
                     onClick={(e) => {
                       e.preventDefault();
-                      document.getElementById('register')?.scrollIntoView({ behavior: 'smooth' }) ||
-                        (window.location.href = '/register');
+                      const el = document.getElementById('register');
+                      const lenis = typeof window !== 'undefined' ? window.__lenis : null;
+                      if (el) {
+                        if (lenis) lenis.scrollTo(el, { duration: 1.0, offset: -60 });
+                        else el.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        window.location.href = '/register';
+                      }
                     }}
                     className="flex-1 py-2.5 px-4 bg-white text-black font-mono font-bold text-xs uppercase text-center rounded-lg shadow-lg active:scale-95 transition-transform cursor-pointer"
                   >

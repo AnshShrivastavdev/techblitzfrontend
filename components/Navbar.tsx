@@ -13,7 +13,12 @@ export function Navbar() {
     setMobileMenuOpen(false);
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      const lenis = typeof window !== 'undefined' ? (window as any).__lenis : null;
+      if (lenis) {
+        lenis.scrollTo(element, { duration: 1.2, offset: -64 });
+      } else {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
 

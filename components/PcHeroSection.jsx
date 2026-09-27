@@ -84,9 +84,14 @@ export function PcHeroSection() {
   const [loadPercent, setLoadPercent] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const [currentChapterIdx, setCurrentChapterIdx] = useState(0);
-  const [chapterProgress, setChapterProgress] = useState(0);
-  const [globalFrameNum, setGlobalFrameNum] = useState(1);
   const [isHeroVisible, setIsHeroVisible] = useState(true);
+
+  // Performance refs to bypass React render cycle during 60/120fps scrubbing
+  const frameNumRef = useRef(null);
+  const progressTextRef = useRef(null);
+  const progressBarRef = useRef(null);
+  const lastChapterIdxRef = useRef(0);
+  const isHeroVisibleRef = useRef(true);
 
   // Images 2D array: imagesRef.current[chapterIdx][frameIdx]
   const imagesRef = useRef(CHAPTERS.map(() => []));
@@ -346,10 +351,25 @@ export function PcHeroSection() {
 
       const { chIdx, frameInCh, totalInCh } = getSceneFrameInfo(targetGlobalFrame);
 
-      setCurrentChapterIdx(chIdx);
+      // Only trigger React state change when chapter changes (strictly 6 times across whole scroll)
+      if (chIdx !== lastChapterIdxRef.current) {
+        lastChapterIdxRef.current = chIdx;
+        setCurrentChapterIdx(chIdx);
+      }
+
+      // Fast direct-DOM updates (zero React reconciliation overhead)
       const chPct = frameInCh / Math.max(1, totalInCh - 1);
-      setChapterProgress(chPct);
-      setGlobalFrameNum(targetGlobalFrame + 1);
+      const pctInt = Math.round(chPct * 100);
+
+      if (frameNumRef.current) {
+        frameNumRef.current.textContent = String(targetGlobalFrame + 1).padStart(4, '0');
+      }
+      if (progressTextRef.current) {
+        progressTextRef.current.textContent = `${pctInt}%`;
+      }
+      if (progressBarRef.current) {
+        progressBarRef.current.style.width = `${pctInt}%`;
+      }
 
       // Preload nearby frames around current scrubber position
       ensureFramesNearby(chIdx, frameInCh);
@@ -420,9 +440,13 @@ export function PcHeroSection() {
       const progress = Math.max(0, Math.min(-rect.top / scrollDistance, 1));
       targetProgressRef.current = progress;
 
-      // Visibility toggle
+      // Visibility toggle only when state changes
       const isPast = rect.bottom < window.innerHeight * 0.4;
-      setIsHeroVisible(!isPast);
+      const visible = !isPast;
+      if (visible !== isHeroVisibleRef.current) {
+        isHeroVisibleRef.current = visible;
+        setIsHeroVisible(visible);
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -438,7 +462,7 @@ export function PcHeroSection() {
 
       const diff = targetProgressRef.current - currentProgressRef.current;
       if (Math.abs(diff) > 0.00005) {
-        currentProgressRef.current += diff * 0.35;
+        currentProgressRef.current += diff * 0.5;
         renderFrameAtProgress(currentProgressRef.current);
       } else if (currentProgressRef.current !== targetProgressRef.current) {
         currentProgressRef.current = targetProgressRef.current;
@@ -460,7 +484,7 @@ export function PcHeroSection() {
     };
   }, [renderFrameAtProgress]);
 
-  // Smooth scroll to chapter click
+  // Smooth scroll to chapter click via Lenis
   const scrollToChapter = (idx) => {
     if (!containerRef.current) return;
     const range = CHAPTER_RANGES[idx];
@@ -472,10 +496,15 @@ export function PcHeroSection() {
     const scrollDistance = containerRef.current.offsetHeight - window.innerHeight;
     const targetScrollY = trackTop + fraction * scrollDistance;
 
-    window.scrollTo({
-      top: targetScrollY,
-      behavior: 'smooth',
-    });
+    const lenis = typeof window !== 'undefined' ? window.__lenis : null;
+    if (lenis) {
+      lenis.scrollTo(targetScrollY, { duration: 1.2 });
+    } else {
+      window.scrollTo({
+        top: targetScrollY,
+        behavior: 'smooth',
+      });
+    }
   };
 
   const activeChapter = CHAPTERS[currentChapterIdx] || CHAPTERS[0];
@@ -556,7 +585,7 @@ export function PcHeroSection() {
                 </a>
                 <span className="text-neutral-600">|</span>
                 <span className="text-neutral-400 font-bold">
-                  FRAME <span className="text-cyan-400">{String(globalFrameNum).padStart(4, '0')}</span> / {TOTAL_FRAMES}
+                  FRAME <span ref={frameNumRef} className="text-cyan-400">0001</span> / {TOTAL_FRAMES}
                 </span>
               </nav>
             </div>
@@ -588,14 +617,15 @@ export function PcHeroSection() {
                 <div className="mb-6 pt-3 border-t border-white/10">
                   <div className="flex items-center justify-between text-[11px] font-mono tracking-wider text-neutral-400 mb-2">
                     <span>CHAPTER PROGRESS</span>
-                    <span className="text-white font-bold font-mono">
-                      {Math.round(chapterProgress * 100)}%
+                    <span ref={progressTextRef} className="text-white font-bold font-mono">
+                      0%
                     </span>
                   </div>
                   <div className="w-full h-1 bg-white/15 overflow-hidden">
                     <div
-                      className="h-full bg-white transition-all duration-75"
-                      style={{ width: `${Math.round(chapterProgress * 100)}%` }}
+                      ref={progressBarRef}
+                      className="h-full bg-white will-change-[width]"
+                      style={{ width: '0%' }}
                     />
                   </div>
                 </div>
@@ -606,8 +636,14 @@ export function PcHeroSection() {
                     href="#register"
                     onClick={(e) => {
                       e.preventDefault();
-                      document.getElementById('register')?.scrollIntoView({ behavior: 'smooth' }) ||
-                        (window.location.href = '/register');
+                      const el = document.getElementById('register');
+                      const lenis = typeof window !== 'undefined' ? window.__lenis : null;
+                      if (el) {
+                        if (lenis) lenis.scrollTo(el, { duration: 1.2, offset: -60 });
+                        else el.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        window.location.href = '/register';
+                      }
                     }}
                     className="py-2.5 px-6 bg-white text-black font-mono font-bold text-xs uppercase tracking-wider rounded transition-all hover:bg-neutral-200 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
                   >
@@ -617,7 +653,12 @@ export function PcHeroSection() {
                     href="#zones"
                     onClick={(e) => {
                       e.preventDefault();
-                      document.getElementById('zones')?.scrollIntoView({ behavior: 'smooth' });
+                      const el = document.getElementById('zones');
+                      const lenis = typeof window !== 'undefined' ? window.__lenis : null;
+                      if (el) {
+                        if (lenis) lenis.scrollTo(el, { duration: 1.2, offset: -60 });
+                        else el.scrollIntoView({ behavior: 'smooth' });
+                      }
                     }}
                     className="py-2.5 px-6 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-mono font-bold text-xs uppercase tracking-wider rounded transition-all active:scale-95"
                   >
