@@ -7,6 +7,7 @@ import { Attendance } from '../models/Attendance.js';
 import { Certificate } from '../models/Certificate.js';
 import { Speaker } from '../models/Speaker.js';
 import { Gallery, FAQ } from '../models/Content.js';
+import { getFirebaseAuth, isFirebaseConfigured } from '../config/firebase.js';
 
 // GET /api/admin/stats - Admin Dashboard High-level Metrics
 export const getAdminStats = async (req, res) => {
@@ -62,52 +63,134 @@ export const getAdminStats = async (req, res) => {
   }
 };
 
-// GET /api/admin/users - Admin Paginated Users List
+// GET /api/admin/users - Admin Paginated Users List (Live Firebase Auth + MongoDB Cluster)
 export const getAdminUsers = async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
+    const { page = 1, limit = 100, search = '' } = req.query;
+
+    // 1. Fetch live registered users from Firebase Auth Console in real-time
+    let firebaseUsers = [];
+    if (isFirebaseConfigured() && getFirebaseAuth()) {
+      try {
+        const listResult = await getFirebaseAuth().listUsers(1000);
+        firebaseUsers = listResult.users.map((u) => {
+          const emailLower = (u.email || '').toLowerCase().trim();
+          const isAdmin = emailLower === (process.env.ADMIN_EMAIL || 'cosmos.jec@jecjabalpur.ac.in').toLowerCase() || u.uid === 'Q4meaY8di1Tz5syyVo0kbIdTIba2';
+          return {
+            id: u.uid,
+            firebaseUid: u.uid,
+            email: emailLower,
+            name: u.displayName || (emailLower ? emailLower.split('@')[0] : 'Participant'),
+            role: isAdmin ? 'admin' : 'student',
+            phone: u.phoneNumber || '',
+            institution: 'Jabalpur Engineering College',
+            college: 'Jabalpur Engineering College',
+            branch: 'CSE',
+            createdAt: u.metadata?.creationTime ? new Date(u.metadata.creationTime) : new Date(),
+          };
+        });
+        console.log(`[GetAdminUsers] Retrieved ${firebaseUsers.length} live users from Firebase Auth.`);
+      } catch (fbErr) {
+        console.warn('[GetAdminUsers] Firebase listUsers notice:', fbErr.message);
+      }
+    }
+
+    // 2. If MongoDB cluster is connected, ensure Firebase users are upserted into MongoDB
+    if (mongoose.connection.readyState === 1) {
+      for (const fbUser of firebaseUsers) {
+        if (!fbUser.email) continue;
+        try {
+          const exists = await User.findOne({
+            $or: [{ email: fbUser.email }, { firebaseUid: fbUser.firebaseUid }],
+          });
+          if (!exists) {
+            await User.create({
+              firebaseUid: fbUser.firebaseUid,
+              name: fbUser.name,
+              email: fbUser.email,
+              role: fbUser.role,
+              institution: fbUser.institution,
+              branch: fbUser.branch,
+              phone: fbUser.phone,
+              profileCompleted: true,
+              createdAt: fbUser.createdAt,
+            });
+          } else if (!exists.firebaseUid && fbUser.firebaseUid) {
+            exists.firebaseUid = fbUser.firebaseUid;
+            await exists.save();
+          }
+        } catch {
+          // ignore duplicate collision
+        }
+      }
+
+      const query = {};
+      if (search) {
+        query.$or = [
+          { name: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+          { branch: { $regex: search, $options: 'i' } },
+          { institution: { $regex: search, $options: 'i' } },
+          { collegeRoll: { $regex: search, $options: 'i' } },
+        ];
+      }
+
+      const total = await User.countDocuments(query);
+      const users = await User.find(query)
+        .sort({ createdAt: -1 })
+        .skip((Number(page) - 1) * Number(limit))
+        .limit(Number(limit));
+
+      // Enrich with workshop registrations and certificates
+      const enrichedUsers = await Promise.all(
+        users.map(async (u) => {
+          const regCount = await Registration.countDocuments({ userId: u._id, status: 'registered' });
+          const certCount = await Certificate.countDocuments({ userId: u._id });
+          const obj = u.toObject();
+          obj.registeredWorkshopsCount = regCount;
+          obj.certificatesCount = certCount;
+          obj.college = obj.institution || obj.college || 'Jabalpur Engineering College';
+          obj.rollNumber = obj.collegeRoll || obj.rollNumber || '';
+          return obj;
+        })
+      );
+
+      // Merge any Firebase users that might not be returned in this paginated page
+      const returnedEmails = new Set(enrichedUsers.map((u) => u.email.toLowerCase()));
+      const pendingFb = firebaseUsers.filter((u) => !returnedEmails.has(u.email));
+
+      const mergedList = [...enrichedUsers, ...pendingFb];
+
       return res.status(200).json({
         success: true,
-        total: 0,
-        page: 1,
-        pages: 0,
-        data: [],
+        total: Math.max(total, mergedList.length),
+        page: Number(page),
+        pages: Math.ceil(Math.max(total, mergedList.length) / Number(limit)) || 1,
+        data: mergedList,
       });
     }
-    const { page = 1, limit = 20, search = '' } = req.query;
-    const query = {};
 
+    // 3. Fallback when MongoDB is in transit: return Firebase Auth real-time users
+    let filteredFb = firebaseUsers;
     if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-      ];
+      const q = search.toLowerCase();
+      filteredFb = filteredFb.filter(
+        (u) =>
+          u.name.toLowerCase().includes(q) ||
+          u.email.toLowerCase().includes(q) ||
+          (u.branch && u.branch.toLowerCase().includes(q))
+      );
     }
 
-    const total = await User.countDocuments(query);
-    const users = await User.find(query)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
-
-    // Enrich with participation metrics
-    const enrichedUsers = await Promise.all(
-      users.map(async (u) => {
-        const regCount = await Registration.countDocuments({ userId: u._id, status: 'registered' });
-        const certCount = await Certificate.countDocuments({ userId: u._id });
-        const obj = u.toObject();
-        obj.registeredWorkshopsCount = regCount;
-        obj.certificatesCount = certCount;
-        return obj;
-      })
-    );
+    const total = filteredFb.length;
+    const paginated = filteredFb.slice((Number(page) - 1) * Number(limit), Number(page) * Number(limit));
 
     return res.status(200).json({
       success: true,
       total,
       page: Number(page),
-      pages: Math.ceil(total / limit),
-      data: enrichedUsers,
+      pages: Math.ceil(total / Number(limit)) || 1,
+      data: paginated,
     });
   } catch (error) {
     console.error('[GetAdminUsers Error]:', error);
@@ -400,23 +483,43 @@ export const syncStudent = async (req, res) => {
   }
 };
 
-// DELETE /api/admin/users/:id - Delete a user in real-time from MongoDB
+// DELETE /api/admin/users/:id - Delete a user in real-time from MongoDB & Firebase Auth
 export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
+    let targetFirebaseUid = null;
+
+    // 1. Delete from MongoDB
     if (mongoose.connection.readyState === 1) {
       const isObjectId = mongoose.isValidObjectId(id);
-      await User.findOneAndDelete({
+      const userDoc = await User.findOne({
         $or: [
           ...(isObjectId ? [{ _id: id }] : []),
           { firebaseUid: id },
           { email: id.toLowerCase() },
         ],
       });
-      await Registration.deleteMany({ userId: id });
-      await Attendance.deleteMany({ userId: id });
+
+      if (userDoc) {
+        targetFirebaseUid = userDoc.firebaseUid;
+        await User.findByIdAndDelete(userDoc._id);
+        await Registration.deleteMany({ userId: userDoc._id });
+        await Attendance.deleteMany({ userId: userDoc._id });
+      }
     }
-    return res.status(200).json({ success: true, message: 'Student removed successfully from MongoDB.' });
+
+    // 2. If id is a Firebase UID or we found targetFirebaseUid, purge from Firebase Auth
+    const fbUidToDelete = targetFirebaseUid || (id.length > 20 && !id.includes('@') ? id : null);
+    if (fbUidToDelete && isFirebaseConfigured() && getFirebaseAuth()) {
+      try {
+        await getFirebaseAuth().deleteUser(fbUidToDelete);
+        console.log(`[DeleteUser] Removed user from Firebase Auth: ${fbUidToDelete}`);
+      } catch (fbErr) {
+        console.warn(`[DeleteUser] Firebase Auth deletion notice: ${fbErr.message}`);
+      }
+    }
+
+    return res.status(200).json({ success: true, message: 'Student removed successfully in real-time from database and Firebase Auth.' });
   } catch (error) {
     console.error('[DeleteUser Error]:', error);
     return res.status(500).json({ success: false, message: error.message });

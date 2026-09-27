@@ -2,6 +2,10 @@ import { initializeApp, getApps, getApp, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let isInitialized = false;
 let authInstance = null;
@@ -14,49 +18,35 @@ const initFirebase = () => {
   }
 
   try {
-    // 1. Direct JSON service account file path
-    const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-    if (serviceAccountPath && fs.existsSync(serviceAccountPath)) {
-      const fileData = fs.readFileSync(serviceAccountPath, 'utf8');
-      const serviceAccount = JSON.parse(fileData);
-      const app = initializeApp({
-        credential: cert(serviceAccount),
-      });
-      isInitialized = true;
-      authInstance = getAuth(app);
-      console.log('[Firebase] Initialized with Service Account file');
-      return app;
-    }
+    // 1. Check all candidate serviceAccountKey paths
+    const candidatePaths = [
+      process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
+      path.resolve(process.cwd(), 'serviceAccountKey.json'),
+      path.resolve(process.cwd(), 'server/serviceAccountKey.json'),
+      path.resolve(__dirname, '../../serviceAccountKey.json'),
+      path.resolve(__dirname, '../serviceAccountKey.json'),
+      '/etc/secrets/serviceAccountKey.json',
+    ].filter(Boolean);
 
-    // Check Render Secret File path (/etc/secrets/serviceAccountKey.json)
-    const renderSecretPath = '/etc/secrets/serviceAccountKey.json';
-    if (fs.existsSync(renderSecretPath)) {
-      const fileData = fs.readFileSync(renderSecretPath, 'utf8');
-      const serviceAccount = JSON.parse(fileData);
-      const app = initializeApp({
-        credential: cert(serviceAccount),
-      });
-      isInitialized = true;
-      authInstance = getAuth(app);
-      console.log('[Firebase] Initialized with Render /etc/secrets/serviceAccountKey.json');
-      return app;
+    for (const p of candidatePaths) {
+      try {
+        if (fs.existsSync(p)) {
+          const fileData = fs.readFileSync(p, 'utf8');
+          const serviceAccount = JSON.parse(fileData);
+          if (serviceAccount && serviceAccount.project_id) {
+            const app = initializeApp({
+              credential: cert(serviceAccount),
+            });
+            isInitialized = true;
+            authInstance = getAuth(app);
+            console.log(`[Firebase] Initialized with Service Account: ${p} (project: ${serviceAccount.project_id})`);
+            return app;
+          }
+        }
+      } catch (err) {
+        console.warn(`[Firebase] Notice checking candidate path ${p}:`, err.message);
+      }
     }
-
-    // Check for default ./serviceAccountKey.json in server root or current working dir
-    const defaultLocalPath = path.resolve(process.cwd(), 'serviceAccountKey.json');
-    if (fs.existsSync(defaultLocalPath)) {
-      const fileData = fs.readFileSync(defaultLocalPath, 'utf8');
-      const serviceAccount = JSON.parse(fileData);
-      const app = initializeApp({
-        credential: cert(serviceAccount),
-      });
-      isInitialized = true;
-      authInstance = getAuth(app);
-      console.log('[Firebase] Initialized with local serviceAccountKey.json');
-      return app;
-    }
-
-    // 2. Individual Environment Variables
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
     let privateKey = process.env.FIREBASE_PRIVATE_KEY;

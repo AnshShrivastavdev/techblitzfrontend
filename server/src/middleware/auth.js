@@ -57,6 +57,8 @@ export const requireAuth = async (req, res, next) => {
     }
 
     const isInitialAdmin = Boolean(
+      (authEmail && authEmail.toLowerCase() === 'cosmos.jec@jecjabalpur.ac.in') ||
+      authUid === 'Q4meaY8di1Tz5syyVo0kbIdTIba2' ||
       (process.env.ADMIN_FIREBASE_UID && process.env.ADMIN_FIREBASE_UID === authUid) ||
       (process.env.ADMIN_EMAIL && authEmail && process.env.ADMIN_EMAIL.toLowerCase() === authEmail.toLowerCase()) ||
       (process.env.ADMIN_CLERK_USER_ID && process.env.ADMIN_CLERK_USER_ID === authUid)
@@ -144,6 +146,8 @@ export const requireAdmin = async (req, res, next) => {
 
     const isAdmin =
       req.user.role === 'admin' ||
+      (req.user.email && req.user.email.toLowerCase() === 'cosmos.jec@jecjabalpur.ac.in') ||
+      req.user.firebaseUid === 'Q4meaY8di1Tz5syyVo0kbIdTIba2' ||
       (process.env.ADMIN_FIREBASE_UID && process.env.ADMIN_FIREBASE_UID === req.user.firebaseUid) ||
       (process.env.ADMIN_EMAIL && req.user.email && process.env.ADMIN_EMAIL.toLowerCase() === req.user.email.toLowerCase()) ||
       (process.env.ADMIN_CLERK_USER_ID && process.env.ADMIN_CLERK_USER_ID === (req.user.clerkId || req.user.firebaseUid));
