@@ -19,15 +19,24 @@ export interface User {
 
 export interface Speaker {
   id: string;
-  userId: string;
-  bio: string;
-  title: string;
+  userId?: string;
+  name: string;
+  role: string;
   company: string;
-  avatarUrl: string;
-  portfolioUrl: string;
-  linkedinUrl: string;
-  githubUrl: string;
-  availabilityStatus: string;
+  batch?: string;
+  education?: string;
+  domain?: string;
+  experience?: string;
+  designation?: string;
+  bio?: string;
+  avatarUrl?: string;
+  photo?: string;
+  category?: string;
+  isKeynote?: boolean;
+  portfolioUrl?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  availabilityStatus?: string;
 }
 
 export interface Workshop {
@@ -126,7 +135,130 @@ const SEED_DATA: DatabaseSchema = {
       createdAt: '2026-08-01T10:00:00Z',
     },
   ],
-  speakers: [],
+  speakers: [
+    {
+      id: 'spk-01',
+      name: 'Dr. Sudhir Kumar Mishra',
+      role: 'Former Director General, DRDO & Former CEO & MD',
+      company: 'DRDO / BrahMos Aerospace',
+      batch: '1982',
+      education: 'Jabalpur Engineering College (1982) • NIT Warangal',
+      domain: 'Missile Systems, Defence Technology & Strategic Innovation',
+      experience: 'Long-standing career in Indian defence research and supersonic missile systems, including leadership as CEO & MD of BrahMos Aerospace and Director General at DRDO, Ministry of Defence, Government of India.',
+      photo: '/speakers/sudhir-kumar-mishra.png',
+      category: 'Defence & Aerospace',
+      isKeynote: true,
+    },
+    {
+      id: 'spk-02',
+      name: 'Vinayak Chaturvedi',
+      role: 'Software Engineer III',
+      company: 'Google',
+      batch: '2018',
+      education: 'B.E. Jabalpur Engineering College (2014–2018) • M.Tech, IIIT Bangalore (2020–2022)',
+      domain: 'Full-Stack Architecture & Cloud Distributed Systems',
+      experience: 'Software Engineer III at Google Hyderabad. Prior systems engineering across Goldman Sachs (Senior Software Developer/Associate), The D. E. Shaw Group (Member Technical), and Infosys.',
+      photo: '/speakers/vinayak-chaturvedi.jpg',
+      category: 'Big Tech & Systems',
+      isKeynote: true,
+    },
+    {
+      id: 'spk-03',
+      name: 'Shrey Tiwari',
+      role: 'Graduate Engineer Trainee',
+      company: 'Reliance Industries Limited',
+      batch: '2023',
+      education: 'Jabalpur Engineering College (2019–2023) • M.Tech, IIT Delhi (Instrument Technology)',
+      domain: 'Instrumentation Technology & Energy Engineering',
+      experience: 'Graduate Engineer Trainee at Reliance Industries Limited. Advanced research in Instrument Technology at IIT Delhi; former technical contributor to the JEC TEJASH electric-bike project.',
+      photo: '/speakers/shrey-tiwari.jpg',
+      category: 'Core Industry',
+    },
+    {
+      id: 'spk-04',
+      name: 'Rishabh Khampariya',
+      role: 'Lead Product Analyst & Chief Mentor',
+      company: 'Housing.com / edAnalytix',
+      batch: 'JEC Alumnus',
+      education: 'Jabalpur Engineering College',
+      domain: 'Product Intelligence, Fintech & Predictive Analytics',
+      experience: 'Over 7 years of product & business analytics leadership across Housing.com, Amazon, Axis Bank, Microsoft client analytics, and Mu Sigma.',
+      photo: '/speakers/rishabh-khampariya.jpg',
+      category: 'AI & Data Science',
+    },
+    {
+      id: 'spk-05',
+      name: 'Tanu Chaurasiya',
+      role: 'Member of Technical Staff 2 (MTS-2)',
+      company: 'Adobe',
+      batch: '2022',
+      education: 'B.E. Jabalpur Engineering College (2018–2022, 8.28 CGPA)',
+      domain: 'Core Software Architecture, EDA & Systems Algorithms',
+      experience: 'Member of Technical Staff at Adobe Noida. Established expertise spanning research-oriented technology roles at Siemens EDA (Senior MTS) and Samsung R&D Institute India (Senior Software Engineer).',
+      photo: '/speakers/tanu-chaurasiya.jpg',
+      category: 'Big Tech & Systems',
+    },
+    {
+      id: 'spk-06',
+      name: 'Prashant Dutta',
+      role: 'Manager (Information Technology)',
+      company: 'MP Electricity Board (MPEB)',
+      batch: '2006',
+      education: 'B.E. Jabalpur Engineering College (2002–2006)',
+      domain: 'Enterprise ERP, Cloud Infrastructure & Smart Metering GIS',
+      experience: 'Over two decades of enterprise IT and large-scale digital governance leadership. Career includes software engineering at Satyam Computer Services, academic faculty leadership, and spearheading AWS cloud migrations, GIS, and smart metering at MPEB.',
+      photo: '',
+      category: 'Core Industry',
+    },
+    {
+      id: 'spk-07',
+      name: 'Ashish Onkar',
+      role: 'SAP Technology Specialist',
+      company: 'Cognizant',
+      batch: '2018',
+      education: 'B.E. Jabalpur Engineering College (2014–2018)',
+      domain: 'Enterprise Systems, S/4HANA & Global Data Integration',
+      experience: 'Experienced enterprise technology professional at Cognizant with over 15+ years of SAP domain depth. Holds industry certifications in SAP Data Services (BODS), SAP S/4HANA Production Planning, and enterprise business transformation.',
+      photo: '',
+      category: 'Big Tech & Systems',
+    },
+    {
+      id: 'spk-08',
+      name: 'Siddharth Chouksey',
+      role: 'Systems Software Engineer',
+      company: 'Hitachi / ex-Secureworks',
+      batch: 'JEC Alumnus',
+      education: 'Jabalpur Engineering College • BITS Pilani Hyderabad (2021–2023)',
+      domain: 'Systems Software, C++ Internals & Cybersecurity EDR',
+      experience: 'Specialist in high-performance C++ systems and Linux OS internals at Hitachi. Deep engineering expertise in endpoint detection & response (EDR) security architecture, Linux kernel agents, and previously with Secureworks.',
+      photo: '/speakers/siddharth-chouksey.jpg',
+      category: 'Big Tech & Systems',
+    },
+    {
+      id: 'spk-09',
+      name: 'Rajit Gupta',
+      role: 'Data Engineer',
+      company: 'American Express',
+      batch: '2021',
+      education: 'B.Tech, Jabalpur Engineering College (2017–2021)',
+      domain: 'Cloud Big Data Pipelines & Enterprise Financial Analytics',
+      experience: 'Data Engineer at American Express Gurugram specializing in scalable analytics, modern big data pipelines, and SQL optimization. Google Cloud Certified Professional Data Engineer and former Smart India Hackathon team lead.',
+      photo: '/speakers/rajit-gupta.jpg',
+      category: 'AI & Data Science',
+    },
+    {
+      id: 'spk-10',
+      name: 'Shailendra Namdev',
+      role: 'Data Scientist (AI/ML & Operations Research)',
+      company: 'Flipkart',
+      batch: '2020',
+      education: 'B.E. Jabalpur Engineering College (2016–2020) • M.Tech (TA) IEOR, IIT Bombay (2021–2023)',
+      domain: 'Machine Learning, Mathematical Optimization & Algorithmic Design',
+      experience: 'Data Scientist at Flipkart Bangalore specializing in machine learning, mathematical programming, and operations research. M.Tech Teaching Assistant from IIT Bombay with published master’s thesis on network design and flow optimization for RBI; ex-Delhivery.',
+      photo: '/speakers/shailendra-namdev.jpg',
+      category: 'AI & Data Science',
+    },
+  ],
   workshops: [],
   registrations: [],
   attendanceLogs: [],
@@ -480,6 +612,20 @@ export function updateSpeakerProfile(speakerId: string, updates: Partial<Speaker
   db.speakers[idx] = { ...db.speakers[idx], ...updates };
   saveDB(db);
   return db.speakers[idx];
+}
+
+export function addSpeaker(data: Omit<Speaker, 'id'>): Speaker {
+  const db = getDB();
+  const item: Speaker = { id: 'spk-' + generateId(), ...data };
+  db.speakers.push(item);
+  saveDB(db);
+  return item;
+}
+
+export function deleteSpeaker(id: string): void {
+  const db = getDB();
+  db.speakers = db.speakers.filter((s) => s.id !== id);
+  saveDB(db);
 }
 
 // ------- Gallery -------

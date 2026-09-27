@@ -322,19 +322,124 @@ export const exportAttendanceCSV = async (req, res) => {
   }
 };
 
+const DEFAULT_SPEAKERS = [
+  {
+    name: 'Dr. Sudhir Kumar Mishra',
+    designation: 'Former Director General, DRDO & Former CEO & MD',
+    company: 'DRDO / BrahMos Aerospace',
+    photo: '/speakers/sudhir-kumar-mishra.png',
+    bio: 'JEC 1982 Alumnus. Distinguished defence leader and former CEO & MD of BrahMos Aerospace and Director General at DRDO, Ministry of Defence.',
+    batch: '1982',
+    education: 'Jabalpur Engineering College (1982) • NIT Warangal',
+    category: 'Defence & Aerospace',
+  },
+  {
+    name: 'Vinayak Chaturvedi',
+    designation: 'Software Engineer III',
+    company: 'Google',
+    photo: '/speakers/vinayak-chaturvedi.jpg',
+    bio: 'JEC 2018 Alumnus. Software Engineer III at Google Hyderabad; ex-Goldman Sachs, D. E. Shaw, and Infosys; M.Tech from IIIT Bangalore.',
+    batch: '2018',
+    education: 'B.E. JEC (2014–2018) • IIIT Bangalore',
+    category: 'Big Tech & Systems',
+  },
+  {
+    name: 'Shrey Tiwari',
+    designation: 'Graduate Engineer Trainee',
+    company: 'Reliance Industries Limited',
+    photo: '/speakers/shrey-tiwari.jpg',
+    bio: 'JEC 2023 Alumnus. Graduate Engineer Trainee at Reliance Industries Limited. Advanced research in Instrument Technology at IIT Delhi; key contributor to TEJASH EV project.',
+    batch: '2023',
+    education: 'JEC (2019–2023) • IIT Delhi',
+    category: 'Core Industry',
+  },
+  {
+    name: 'Rishabh Khampariya',
+    designation: 'Lead Product Analyst & Chief Mentor',
+    company: 'Housing.com / edAnalytix',
+    photo: '/speakers/rishabh-khampariya.jpg',
+    bio: 'JEC Alumnus. 7+ years in product and business analytics across Amazon, Microsoft client analytics, Axis Bank, Mu Sigma, and Housing.',
+    batch: 'JEC Alumnus',
+    education: 'Jabalpur Engineering College',
+    category: 'AI & Data Science',
+  },
+  {
+    name: 'Tanu Chaurasiya',
+    designation: 'Member of Technical Staff 2 (MTS-2)',
+    company: 'Adobe',
+    photo: '/speakers/tanu-chaurasiya.jpg',
+    bio: 'JEC 2022 Alumna. Member of Technical Staff at Adobe Noida. Former Senior Member of Technical Staff at Siemens EDA and Samsung R&D Institute India.',
+    batch: '2022',
+    education: 'B.E. JEC (2018–2022, 8.28 CGPA)',
+    category: 'Big Tech & Systems',
+  },
+  {
+    name: 'Prashant Dutta',
+    designation: 'Manager (Information Technology)',
+    company: 'MP Electricity Board (MPEB)',
+    photo: '',
+    bio: 'JEC 2006 Alumnus. 20+ years of IT leadership across Satyam, academia, and enterprise cloud migrations, smart metering, and GIS at MPEB.',
+    batch: '2006',
+    education: 'B.E. JEC (2002–2006)',
+    category: 'Core Industry',
+  },
+  {
+    name: 'Ashish Onkar',
+    designation: 'SAP Technology Specialist',
+    company: 'Cognizant',
+    photo: '',
+    bio: 'JEC 2018 Alumnus. 15+ years SAP enterprise experience with certifications in SAP Data Services (BODS), S/4HANA Production Planning, and enterprise transformations.',
+    batch: '2018',
+    education: 'B.E. JEC (2014–2018)',
+    category: 'Big Tech & Systems',
+  },
+  {
+    name: 'Siddharth Chouksey',
+    designation: 'Systems Software Engineer',
+    company: 'Hitachi / ex-Secureworks',
+    photo: '/speakers/siddharth-chouksey.jpg',
+    bio: 'JEC Alumnus. Systems programmer specializing in C++, Linux internals, and cybersecurity endpoint detection & response (EDR); M.Tech BITS Pilani.',
+    batch: 'JEC Alumnus',
+    education: 'JEC • BITS Pilani Hyderabad',
+    category: 'Big Tech & Systems',
+  },
+  {
+    name: 'Rajit Gupta',
+    designation: 'Data Engineer',
+    company: 'American Express',
+    photo: '/speakers/rajit-gupta.jpg',
+    bio: 'JEC 2021 Alumnus. Data Engineer at American Express Gurugram; Google Cloud Certified Professional Data Engineer; Smart India Hackathon team lead.',
+    batch: '2021',
+    education: 'B.Tech JEC (2017–2021)',
+    category: 'AI & Data Science',
+  },
+  {
+    name: 'Shailendra Namdev',
+    designation: 'Data Scientist (AI/ML & Operations Research)',
+    company: 'Flipkart',
+    photo: '/speakers/shailendra-namdev.jpg',
+    bio: 'JEC 2020 Alumnus. Data Scientist at Flipkart; M.Tech from IIT Bombay (IEOR) with master’s thesis on network optimization for RBI; ex-Delhivery.',
+    batch: '2020',
+    education: 'B.E. JEC (2016–2020) • IIT Bombay (2021–2023)',
+    category: 'AI & Data Science',
+  },
+];
+
 // CRUD for Content (Speakers, Gallery, FAQs)
 export const getSpeakers = async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(200).json({
-        success: true,
-        data: [],
-      });
+    if (mongoose.connection.readyState === 1) {
+      let speakers = await Speaker.find().sort({ createdAt: 1 });
+      if (speakers.length === 0) {
+        // Auto-seed default speakers into MongoDB
+        await Speaker.insertMany(DEFAULT_SPEAKERS);
+        speakers = await Speaker.find().sort({ createdAt: 1 });
+      }
+      return res.status(200).json({ success: true, data: speakers });
     }
-    const speakers = await Speaker.find().sort({ name: 1 });
-    return res.status(200).json({ success: true, data: speakers });
+    return res.status(200).json({ success: true, data: DEFAULT_SPEAKERS });
   } catch (err) {
-    return res.status(200).json({ success: true, data: [] });
+    return res.status(200).json({ success: true, data: DEFAULT_SPEAKERS });
   }
 };
 

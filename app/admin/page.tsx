@@ -10,6 +10,7 @@ import {
   Registration,
   AttendanceLog,
   Certificate,
+  Speaker,
   getAllUsers,
   getAllWorkshops,
   createWorkshop,
@@ -22,6 +23,9 @@ import {
   exportUsersCSV,
   exportAttendanceCSV,
   getFAQs,
+  getSpeakers,
+  addSpeaker,
+  deleteSpeaker,
 } from '@/services/storageService';
 import {
   subscribeToRealtimeStudents,
@@ -56,6 +60,10 @@ import {
   Phone,
   Mail,
   AlertTriangle,
+  Mic,
+  Sparkles,
+  Briefcase,
+  ShieldCheck,
 } from 'lucide-react';
 
 export default function DashboardAdmin() {
@@ -75,18 +83,34 @@ export default function DashboardAdmin() {
     }
   }, [user, loading, router]);
 
-  const [module, setModule] = useState<'overview' | 'workshops' | 'users' | 'attendance' | 'certificates'>('overview');
+  const [module, setModule] = useState<'overview' | 'workshops' | 'users' | 'attendance' | 'certificates' | 'speakers'>('overview');
   const [users, setUsers] = useState<User[]>([]);
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [attendance, setAttendance] = useState<AttendanceLog[]>([]);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [feedback, setFeedback] = useState<{ type: string; msg: string }>({ type: '', msg: '' });
 
   // Filters & Modals
   const [userSearch, setUserSearch] = useState('');
+  const [speakerSearch, setSpeakerSearch] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState('all');
   const [showCreateWs, setShowCreateWs] = useState(false);
+  const [showCreateSpeaker, setShowCreateSpeaker] = useState(false);
+
+  // New Speaker Form State
+  const [newSpeaker, setNewSpeaker] = useState({
+    name: '',
+    role: '',
+    company: '',
+    batch: '',
+    education: '',
+    domain: '',
+    experience: '',
+    category: 'Big Tech & Systems',
+    photo: '',
+  });
 
   // New Workshop Form State
   const [newWs, setNewWs] = useState({
@@ -109,6 +133,7 @@ export default function DashboardAdmin() {
     setRegistrations(getRegistrations());
     setAttendance(getAttendanceLogs());
     setCertificates(getCertificates());
+    setSpeakers(getSpeakers());
     getFAQs();
   };
 
@@ -405,6 +430,12 @@ export default function DashboardAdmin() {
             onClick={() => setModule('certificates')}
           >
             <Award size={16} /> Certificate Engine ({certificates.length})
+          </button>
+          <button
+            className={`dash-tab ${module === 'speakers' ? 'dash-tab--active' : ''}`}
+            onClick={() => setModule('speakers')}
+          >
+            <Mic size={16} /> Speakers & Mentors ({speakers.length})
           </button>
         </div>
 
@@ -1319,6 +1350,283 @@ export default function DashboardAdmin() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* MODULE 6: SPEAKERS & MENTORS */}
+        {module === 'speakers' && (
+          <div className="dash-content-pane">
+            <div className="dash-pane-header">
+              <div>
+                <h3 style={{ margin: 0 }}>Speakers & Keynote Mentors ({speakers.length})</h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: '4px 0 0' }}>
+                  Distinguished JEC alumni & guest leaders featured on the TechBlitz 2.0 main launchpad.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  onClick={() => setShowCreateSpeaker(!showCreateSpeaker)}
+                  className="dash-btn-primary"
+                >
+                  <Plus size={16} /> Register Speaker
+                </button>
+              </div>
+            </div>
+
+            {/* Create Speaker Form */}
+            {showCreateSpeaker && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!newSpeaker.name || !newSpeaker.company || !newSpeaker.role) {
+                    showToast('error', 'Name, Company, and Role are required.');
+                    return;
+                  }
+                  addSpeaker(newSpeaker);
+                  setNewSpeaker({
+                    name: '',
+                    role: '',
+                    company: '',
+                    batch: '',
+                    education: '',
+                    domain: '',
+                    experience: '',
+                    category: 'Big Tech & Systems',
+                    photo: '',
+                  });
+                  setShowCreateSpeaker(false);
+                  loadAll();
+                  showToast('success', 'New speaker registered successfully!');
+                }}
+                className="dash-profile-form"
+                style={{ marginBottom: 28 }}
+              >
+                <h4 style={{ color: '#38bdf8', marginBottom: 14 }}>Register Distinguished Speaker</h4>
+                <div className="dash-form-row">
+                  <div className="dash-form-group">
+                    <label>Speaker Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Dr. Sudhir Kumar Mishra"
+                      value={newSpeaker.name}
+                      onChange={(e) => setNewSpeaker({ ...newSpeaker, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="dash-form-group">
+                    <label>Current Role / Designation *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Software Engineer III / Lead Architect"
+                      value={newSpeaker.role}
+                      onChange={(e) => setNewSpeaker({ ...newSpeaker, role: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="dash-form-row">
+                  <div className="dash-form-group">
+                    <label>Company / Organization *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Google / DRDO / Adobe"
+                      value={newSpeaker.company}
+                      onChange={(e) => setNewSpeaker({ ...newSpeaker, company: e.target.value })}
+                    />
+                  </div>
+                  <div className="dash-form-group">
+                    <label>JEC Batch</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. JEC 2018 Batch"
+                      value={newSpeaker.batch}
+                      onChange={(e) => setNewSpeaker({ ...newSpeaker, batch: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="dash-form-row">
+                  <div className="dash-form-group">
+                    <label>Educational Background</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. B.E. JEC (2014-2018) • M.Tech IIIT Bangalore"
+                      value={newSpeaker.education}
+                      onChange={(e) => setNewSpeaker({ ...newSpeaker, education: e.target.value })}
+                    />
+                  </div>
+                  <div className="dash-form-group">
+                    <label>Category Domain</label>
+                    <select
+                      value={newSpeaker.category}
+                      onChange={(e) => setNewSpeaker({ ...newSpeaker, category: e.target.value })}
+                      className="dash-select"
+                    >
+                      <option value="Defence & Aerospace">Defence & Aerospace</option>
+                      <option value="Big Tech & Systems">Big Tech & Systems</option>
+                      <option value="AI & Data Science">AI & Data Science</option>
+                      <option value="Core Industry">Core Industry</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="dash-form-row">
+                  <div className="dash-form-group">
+                    <label>Photo URL (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. /speakers/vinayak-chaturvedi.jpg"
+                      value={newSpeaker.photo}
+                      onChange={(e) => setNewSpeaker({ ...newSpeaker, photo: e.target.value })}
+                    />
+                  </div>
+                  <div className="dash-form-group">
+                    <label>Core Technical Domain</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Cloud Distributed Systems & ML"
+                      value={newSpeaker.domain}
+                      onChange={(e) => setNewSpeaker({ ...newSpeaker, domain: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="dash-form-group" style={{ marginBottom: 16 }}>
+                  <label>Professional Experience / Summary</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Brief career overview, companies, and achievements..."
+                    value={newSpeaker.experience}
+                    onChange={(e) => setNewSpeaker({ ...newSpeaker, experience: e.target.value })}
+                    className="dash-input"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button type="submit" className="dash-btn-primary">
+                    Save Speaker
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateSpeaker(false)}
+                    className="dash-btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Search filter for speakers */}
+            <div style={{ marginBottom: 18 }}>
+              <input
+                type="text"
+                placeholder="Search speakers by name, company, role, or batch..."
+                value={speakerSearch}
+                onChange={(e) => setSpeakerSearch(e.target.value)}
+                className="dash-input"
+                style={{ width: '100%', maxWidth: 420 }}
+              />
+            </div>
+
+            {/* Speakers Cards Grid */}
+            <div className="dash-grid-cards">
+              {speakers
+                .filter((s) => {
+                  if (!speakerSearch.trim()) return true;
+                  const q = speakerSearch.toLowerCase();
+                  return (
+                    s.name.toLowerCase().includes(q) ||
+                    s.company.toLowerCase().includes(q) ||
+                    s.role.toLowerCase().includes(q) ||
+                    (s.batch && s.batch.toLowerCase().includes(q))
+                  );
+                })
+                .map((spk) => (
+                  <div key={spk.id} className="dash-card" style={{ height: '100%', margin: 0 }}>
+                    <div className="dash-card__top">
+                      <span className="dash-category-tag">{spk.category || 'Big Tech'}</span>
+                      {spk.batch && (
+                        <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>
+                          ⚡ JEC {spk.batch}
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8, marginBottom: 10 }}>
+                      <div
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: '50%',
+                          overflow: 'hidden',
+                          backgroundColor: '#1e293b',
+                          border: '1px solid rgba(56, 189, 248, 0.4)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {spk.photo ? (
+                          <img
+                            src={spk.photo}
+                            alt={spk.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.9rem' }}>
+                            {spk.name
+                              .split(' ')
+                              .filter((w) => !w.startsWith('Dr.'))
+                              .slice(0, 2)
+                              .map((n) => n[0])
+                              .join('')}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="dash-card__title" style={{ margin: 0, fontSize: '1.05rem' }}>
+                          {spk.name}
+                        </h4>
+                        <div style={{ color: '#38bdf8', fontSize: '0.8rem', fontWeight: 600 }}>
+                          {spk.role}
+                        </div>
+                        <div style={{ color: '#cbd5e1', fontSize: '0.78rem' }}>
+                          {spk.company}
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="dash-card__desc" style={{ fontSize: '0.8rem', lineHeight: 1.4, margin: '8px 0' }}>
+                      {spk.experience || spk.domain || spk.education}
+                    </p>
+
+                    <div style={{ marginTop: 'auto', paddingTop: 12, borderTop: '1px solid rgba(255, 255, 255, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                        {spk.education?.split('•')[0] || 'Jabalpur Engineering College'}
+                      </span>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Remove speaker ${spk.name}?`)) {
+                            deleteSpeaker(spk.id);
+                            loadAll();
+                            showToast('success', `Speaker "${spk.name}" removed.`);
+                          }
+                        }}
+                        className="dash-btn-danger"
+                        style={{ padding: '4px 8px', fontSize: '0.72rem' }}
+                        title="Delete Speaker"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
           </div>
         )}
       </main>

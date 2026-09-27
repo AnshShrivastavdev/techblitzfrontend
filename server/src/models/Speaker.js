@@ -33,6 +33,26 @@ const speakerSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    batch: {
+      type: String,
+      default: '',
+    },
+    education: {
+      type: String,
+      default: '',
+    },
+    domain: {
+      type: String,
+      default: '',
+    },
+    category: {
+      type: String,
+      default: 'Big Tech & Systems',
+    },
+    isKeynote: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
