@@ -6,7 +6,7 @@ import { Navbar } from '@/components/Navbar';
 import { HeroSection } from '@/components/HeroSection';
 import { CompanyMarquee } from '@/components/CompanyMarquee';
 import { AboutSection } from '@/components/AboutSection';
-import { EventZonesSection } from '@/components/EventZonesSection';
+import { OutreachPartnersSection } from '@/components/OutreachPartnersSection';
 import { SpeakersSection } from '@/components/SpeakersSection';
 import { GallerySection } from '@/components/GallerySection';
 import { FaqSection } from '@/components/FaqSection';
@@ -41,8 +41,8 @@ export default function Home() {
         {/* About Section (#about) */}
         <AboutSection />
 
-        {/* Event Zones 3-Column Grid (#zones) */}
-        <EventZonesSection />
+        {/* Outreach Partners Floating Showcase (#partners / #zones) */}
+        <OutreachPartnersSection />
 
         {/* Speakers Section (#speakers) */}
         <SpeakersSection />

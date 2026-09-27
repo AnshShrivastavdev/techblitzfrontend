@@ -56,6 +56,12 @@ export function Navbar() {
             ABOUT
           </button>
           <button
+            onClick={() => scrollTo('partners')}
+            className="hover:text-white transition-colors cursor-pointer"
+          >
+            PARTNERS
+          </button>
+          <button
             onClick={() => scrollTo('speakers')}
             className="hover:text-white transition-colors cursor-pointer"
           >
@@ -114,6 +120,12 @@ export function Navbar() {
             className="w-full text-left text-neutral-300 hover:text-white py-3 px-2 rounded hover:bg-white/5 flex items-center min-h-[44px]"
           >
             ABOUT
+          </button>
+          <button
+            onClick={() => scrollTo('partners')}
+            className="w-full text-left text-neutral-300 hover:text-white py-3 px-2 rounded hover:bg-white/5 flex items-center min-h-[44px]"
+          >
+            PARTNERS
           </button>
           <button
             onClick={() => scrollTo('speakers')}

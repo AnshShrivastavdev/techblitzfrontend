@@ -566,10 +566,10 @@ export function PcHeroSection() {
                   ABOUT
                 </a>
                 <a
-                  href="#zones"
+                  href="#partners"
                   className="hover:text-white transition-colors cursor-pointer"
                 >
-                  TRACKS
+                  PARTNERS
                 </a>
                 <a
                   href="#speakers"
@@ -650,10 +650,10 @@ export function PcHeroSection() {
                     Register Now
                   </a>
                   <a
-                    href="#zones"
+                    href="#partners"
                     onClick={(e) => {
                       e.preventDefault();
-                      const el = document.getElementById('zones');
+                      const el = document.getElementById('partners') || document.getElementById('zones');
                       const lenis = typeof window !== 'undefined' ? window.__lenis : null;
                       if (el) {
                         if (lenis) lenis.scrollTo(el, { duration: 1.2, offset: -60 });
@@ -662,7 +662,7 @@ export function PcHeroSection() {
                     }}
                     className="py-2.5 px-6 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-mono font-bold text-xs uppercase tracking-wider rounded transition-all active:scale-95"
                   >
-                    Explore Tracks
+                    Explore Partners
                   </a>
                 </div>
               </div>
