@@ -9,6 +9,7 @@ import {
   onAuthStateChanged,
   User as FirebaseUser,
 } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyDz_6wW65l1Y2aieWDfROo5jhL1nfNC0NY",
@@ -23,11 +24,13 @@ const firebaseConfig = {
 // Initialize Firebase once
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db: Firestore = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
 export {
   app,
   auth,
+  db,
   googleProvider,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,

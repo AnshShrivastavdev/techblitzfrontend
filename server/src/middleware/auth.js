@@ -68,7 +68,7 @@ export const requireAuth = async (req, res, next) => {
         _id: 'user-demo-001',
         firebaseUid: authUid,
         clerkId: authUid,
-        name: authName || (isInitialAdmin ? 'Aakash Sharma (COSMOS Lead)' : 'TechBlitz Participant'),
+        name: authName || (isInitialAdmin ? 'COSMOS Mission Control' : 'TechBlitz Participant'),
         email: authEmail || `${authUid}@firebase.user`,
         role: isInitialAdmin ? 'admin' : 'user',
         profileCompleted: true,

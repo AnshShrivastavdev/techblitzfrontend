@@ -23,6 +23,7 @@ import {
   exportAttendanceCSV,
   getFAQs,
 } from '@/services/storageService';
+import { subscribeToRealtimeStudents, exportLiveStudentsCSV } from '@/services/realtimeUserService';
 import {
   Users,
   Calendar,
@@ -98,6 +99,14 @@ export default function DashboardAdmin() {
 
   useEffect(() => {
     loadAll();
+
+    // Subscribe to live Firebase Firestore & MongoDB student telemetry
+    const unsubscribe = subscribeToRealtimeStudents((realtimeStudents) => {
+      const adminUsers = getAllUsers().filter((u) => u.role === 'admin');
+      setUsers([...adminUsers, ...realtimeStudents]);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const showToast = (type: string, msg: string) => {
@@ -586,7 +595,18 @@ export default function DashboardAdmin() {
                 >
                   <RefreshCw size={14} /> Refresh
                 </button>
-                <button onClick={exportUsersCSV} className="dash-btn-primary">
+                <button
+                  onClick={() => {
+                    const studentsOnly = filteredUsers.filter((u) => u.role !== 'admin');
+                    if (studentsOnly.length > 0) {
+                      exportLiveStudentsCSV(studentsOnly);
+                    } else {
+                      exportUsersCSV();
+                    }
+                  }}
+                  className="dash-btn-primary"
+                  title="Export live student directory to CSV"
+                >
                   <FileSpreadsheet size={15} /> Export Students CSV
                 </button>
               </div>

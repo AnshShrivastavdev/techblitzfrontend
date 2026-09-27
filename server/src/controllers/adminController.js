@@ -15,13 +15,13 @@ export const getAdminStats = async (req, res) => {
       return res.status(200).json({
         success: true,
         data: {
-          totalUsers: 120,
-          totalWorkshops: 4,
-          totalRegistrations: 280,
-          totalCertificates: 65,
-          liveWorkshops: 1,
-          completedWorkshops: 1,
-          eligibleParticipants: 65,
+          totalUsers: 0,
+          totalWorkshops: 0,
+          totalRegistrations: 0,
+          totalCertificates: 0,
+          liveWorkshops: 0,
+          completedWorkshops: 0,
+          eligibleParticipants: 0,
         },
       });
     }
@@ -50,13 +50,13 @@ export const getAdminStats = async (req, res) => {
     return res.status(200).json({
       success: true,
       data: {
-        totalUsers: 120,
-        totalWorkshops: 4,
-        totalRegistrations: 280,
-        totalCertificates: 65,
-        liveWorkshops: 1,
-        completedWorkshops: 1,
-        eligibleParticipants: 65,
+        totalUsers: 0,
+        totalWorkshops: 0,
+        totalRegistrations: 0,
+        totalCertificates: 0,
+        liveWorkshops: 0,
+        completedWorkshops: 0,
+        eligibleParticipants: 0,
       },
     });
   }
@@ -68,27 +68,10 @@ export const getAdminUsers = async (req, res) => {
     if (mongoose.connection.readyState !== 1) {
       return res.status(200).json({
         success: true,
-        total: 2,
+        total: 0,
         page: 1,
-        pages: 1,
-        data: [
-          {
-            _id: 'user-admin-001',
-            name: 'Aakash Sharma (COSMOS Lead)',
-            email: 'aakash.sharma@jec.ac.in',
-            role: 'admin',
-            registeredWorkshopsCount: 4,
-            certificatesCount: 2,
-          },
-          {
-            _id: 'user-demo-002',
-            name: 'Rohan Verma',
-            email: 'rohan.verma@student.jec.ac.in',
-            role: 'user',
-            registeredWorkshopsCount: 2,
-            certificatesCount: 1,
-          },
-        ],
+        pages: 0,
+        data: [],
       });
     }
     const { page = 1, limit = 20, search = '' } = req.query;
@@ -262,24 +245,7 @@ export const getSpeakers = async (req, res) => {
     if (mongoose.connection.readyState !== 1) {
       return res.status(200).json({
         success: true,
-        data: [
-          {
-            _id: 'sp-001',
-            name: 'Dr. Sarah Chen',
-            company: 'DeepMind Research Lab',
-            designation: 'Senior Research Scientist',
-            bio: 'AI/ML Research Scientist with 10+ years of experience.',
-            photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400',
-          },
-          {
-            _id: 'sp-002',
-            name: 'Alex Rivera',
-            company: 'Stellar Cloud Systems',
-            designation: 'Principal Cloud Architect',
-            bio: 'Cloud Architecture specialist and distributed systems engineer.',
-            photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400',
-          },
-        ],
+        data: [],
       });
     }
     const speakers = await Speaker.find().sort({ name: 1 });
@@ -386,3 +352,51 @@ export const deleteFAQ = async (req, res) => {
   await FAQ.findByIdAndDelete(req.params.id);
   return res.status(200).json({ success: true, message: 'FAQ deleted.' });
 };
+
+// POST /api/students/sync - Sync student from Firebase into MongoDB
+export const syncStudent = async (req, res) => {
+  try {
+    const { id, uid, firebaseUid, name, email, role = 'student', college, institution, branch, semester, rollNumber, collegeRoll, phone } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email required' });
+    }
+    const finalUid = uid || firebaseUid || id;
+    const finalCollege = college || institution || 'Jabalpur Engineering College';
+    const finalRoll = rollNumber || collegeRoll || '';
+
+    if (mongoose.connection.readyState === 1) {
+      let user = await User.findOne({
+        $or: [{ email: email.toLowerCase() }, ...(finalUid ? [{ firebaseUid: finalUid }] : [])],
+      });
+      if (!user) {
+        user = await User.create({
+          firebaseUid: finalUid,
+          name: name || 'TechBlitz Participant',
+          email: email.toLowerCase(),
+          role: role === 'admin' ? 'admin' : 'student',
+          institution: finalCollege,
+          branch: branch || 'CSE',
+          semester: semester || '',
+          collegeRoll: finalRoll,
+          phone: phone || '',
+          profileCompleted: true,
+        });
+      } else {
+        if (name) user.name = name;
+        if (finalCollege) user.institution = finalCollege;
+        if (branch) user.branch = branch;
+        if (semester) user.semester = semester;
+        if (finalRoll) user.collegeRoll = finalRoll;
+        if (phone) user.phone = phone;
+        if (finalUid) user.firebaseUid = finalUid;
+        await user.save();
+      }
+      return res.status(200).json({ success: true, user });
+    }
+    return res.status(200).json({ success: true, message: 'Synced (DB standalone mode)' });
+  } catch (error) {
+    console.error('[SyncStudent Error]:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+

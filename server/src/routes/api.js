@@ -39,6 +39,7 @@ import {
   createFAQ,
   updateFAQ,
   deleteFAQ,
+  syncStudent,
 } from '../controllers/adminController.js';
 
 const router = express.Router();
@@ -52,6 +53,7 @@ router.get('/speakers', getSpeakers);
 router.get('/gallery', getGallery);
 router.get('/faqs', getFAQs);
 router.get('/certificates/:certificateId/verify', verifyCertificate);
+router.post('/students/sync', syncStudent);
 
 // ==========================================
 // 2. PARTICIPANT / USER ROUTES (Require Auth)

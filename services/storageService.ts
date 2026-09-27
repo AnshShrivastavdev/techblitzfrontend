@@ -12,6 +12,8 @@ export interface User {
   branch?: string;
   semester?: string;
   rollNumber?: string;
+  phone?: string;
+  institution?: string;
   createdAt: string;
 }
 

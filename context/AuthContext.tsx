@@ -9,6 +9,7 @@ import {
   isAdminEmail,
   upsertUser,
 } from '@/services/storageService';
+import { syncStudentToCloud } from '@/services/realtimeUserService';
 import {
   auth,
   googleProvider,
@@ -73,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
 
         upsertUser(syncedUser);
+        syncStudentToCloud(syncedUser);
         setUser(syncedUser);
         localStorage.setItem(SESSION_KEY, JSON.stringify({ id: syncedUser.id, role: syncedUser.role }));
       } else {
@@ -118,6 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           createdAt: new Date().toISOString(),
         };
         upsertUser(userObj);
+        syncStudentToCloud(userObj);
         setUser(userObj);
         persistSession(userObj);
         return { success: true, user: userObj };
@@ -163,8 +166,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           createdAt: new Date().toISOString(),
         };
 
-        // Also save to local storage service
+        // Also save to local storage service & Cloud
         upsertUser(userObj);
+        syncStudentToCloud(userObj);
         setUser(userObj);
         persistSession(userObj);
         return { success: true, user: userObj };
@@ -177,6 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Fallback to local storage
     const result = registerStudent(userData);
     if (result.success && result.user) {
+      syncStudentToCloud(result.user);
       setUser(result.user);
       persistSession(result.user);
     }
@@ -197,6 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         createdAt: new Date().toISOString(),
       };
       upsertUser(userObj);
+      syncStudentToCloud(userObj);
       setUser(userObj);
       persistSession(userObj);
       return { success: true, user: userObj };
