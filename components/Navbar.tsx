@@ -164,13 +164,6 @@ export function Navbar() {
                 SIGN UP
               </Link>
             </div>
-            <Link
-              href="/dashboard"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full min-h-[44px] flex items-center justify-center text-center text-xs font-semibold text-cyan-300 border border-cyan-500/30 bg-cyan-950/20 rounded hover:bg-cyan-900/30"
-            >
-              ⚡ OPEN DASHBOARD
-            </Link>
           </div>
         </div>
       )}
