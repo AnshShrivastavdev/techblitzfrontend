@@ -259,7 +259,83 @@ const SEED_DATA: DatabaseSchema = {
       category: 'AI & Data Science',
     },
   ],
-  workshops: [],
+  workshops: [
+    {
+      id: 'ws-101',
+      title: 'Generative AI & Autonomous Agentic Systems',
+      description: 'Master large language models, prompt engineering, agentic orchestration framework, and autonomous tool-calling APIs with real-world deployments.',
+      speakerId: 'spk-02',
+      speakerName: 'Vinayak Chaturvedi (Software Engineer III @ Google)',
+      speakerEmail: 'vinayak@google.com',
+      status: 'live',
+      meetLink: 'https://meet.google.com/tb2-genai-session',
+      scheduledStartTime: '2026-10-02T18:00:00.000Z',
+      scheduledEndTime: '2026-10-02T20:00:00.000Z',
+      minAttendanceMinutes: 45,
+      maxCapacity: 150,
+      track: 'AI & Neural Systems',
+    },
+    {
+      id: 'ws-102',
+      title: 'Cloud-Native Kubernetes & Distributed Microservices',
+      description: 'Deep dive into Docker containerization, Kubernetes cluster orchestration, service mesh routing, and production cloud architecture.',
+      speakerId: 'spk-05',
+      speakerName: 'Tanu Chaurasiya (MTS-2 @ Adobe)',
+      speakerEmail: 'tanu@adobe.com',
+      status: 'published',
+      meetLink: 'https://meet.google.com/tb2-cloud-native',
+      scheduledStartTime: '2026-10-03T18:00:00.000Z',
+      scheduledEndTime: '2026-10-03T20:00:00.000Z',
+      minAttendanceMinutes: 45,
+      maxCapacity: 120,
+      track: 'Cloud & Systems',
+    },
+    {
+      id: 'ws-103',
+      title: 'Cybersecurity EDR, Linux Kernel & C++ Systems Security',
+      description: 'Explore high-performance C++ systems programming, Linux OS internals, endpoint detection & response (EDR) agents, and offensive defense paradigms.',
+      speakerId: 'spk-08',
+      speakerName: 'Siddharth Chouksey (Systems Engineer @ Hitachi)',
+      speakerEmail: 'siddharth@hitachi.com',
+      status: 'published',
+      meetLink: 'https://meet.google.com/tb2-cybersecurity',
+      scheduledStartTime: '2026-10-04T18:00:00.000Z',
+      scheduledEndTime: '2026-10-04T20:00:00.000Z',
+      minAttendanceMinutes: 45,
+      maxCapacity: 100,
+      track: 'Cybersecurity & Systems',
+    },
+    {
+      id: 'ws-104',
+      title: 'Embedded Robotics, ESP32 Prototyping & Energy Systems',
+      description: 'Hands-on hardware prototyping, sensor telemetry integration, ESP32 microcontrollers, and EV instrumentation engineering.',
+      speakerId: 'spk-03',
+      speakerName: 'Shrey Tiwari (Engineer Trainee @ Reliance)',
+      speakerEmail: 'shrey@reliance.com',
+      status: 'published',
+      meetLink: 'https://meet.google.com/tb2-hardware-iot',
+      scheduledStartTime: '2026-10-05T18:00:00.000Z',
+      scheduledEndTime: '2026-10-05T20:00:00.000Z',
+      minAttendanceMinutes: 45,
+      maxCapacity: 100,
+      track: 'Core Hardware & Robotics',
+    },
+    {
+      id: 'ws-105',
+      title: 'Supersonic Missile Telemetry & Defence Aerospace Engineering',
+      description: 'Keynote exploration into Indian defence technology, supersonic missile systems, BrahMos aerospace architecture, and DRDO strategic research.',
+      speakerId: 'spk-01',
+      speakerName: 'Dr. Sudhir Kumar Mishra (Former DG DRDO)',
+      speakerEmail: 'dr.sudhir@drdo.gov.in',
+      status: 'published',
+      meetLink: 'https://meet.google.com/tb2-aerospace-keynote',
+      scheduledStartTime: '2026-10-06T18:00:00.000Z',
+      scheduledEndTime: '2026-10-06T20:00:00.000Z',
+      minAttendanceMinutes: 45,
+      maxCapacity: 250,
+      track: 'Defence & Aerospace',
+    },
+  ],
   registrations: [],
   attendanceLogs: [],
   certificates: [],
@@ -313,6 +389,12 @@ function getDB(): DatabaseSchema {
       mutated = true;
     }
 
+    // Auto-seed workshops if missing or empty
+    if (!parsed.workshops || parsed.workshops.length === 0) {
+      parsed.workshops = JSON.parse(JSON.stringify(SEED_DATA.workshops));
+      mutated = true;
+    }
+
     if (mutated) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
     }
@@ -329,8 +411,12 @@ function saveDB(db: DatabaseSchema): void {
 }
 
 // ------- Auth -------
-export function isAdminEmail(email: string): boolean {
-  return ADMIN_WHITELIST.includes(email.toLowerCase().trim());
+export function isAdminEmail(email?: string | null): boolean {
+  if (!email) return false;
+  const clean = email.toLowerCase().trim();
+  const envAdmin = (typeof process !== 'undefined' && (process.env.NEXT_PUBLIC_ADMIN_EMAIL || process.env.ADMIN_EMAIL)) || '';
+  if (envAdmin && clean === envAdmin.toLowerCase().trim()) return true;
+  return ADMIN_WHITELIST.some((e) => e.toLowerCase().trim() === clean);
 }
 
 export function loginUser(email: string, password?: string): { success: boolean; user?: User; error?: string } {
@@ -419,6 +505,38 @@ export function deleteUserById(userId: string, email?: string): boolean {
 // ------- Workshops -------
 export function getAllWorkshops(): Workshop[] {
   return getDB().workshops;
+}
+
+export async function fetchWorkshopsFromAPI(): Promise<Workshop[]> {
+  try {
+    const res = await fetch('http://localhost:5000/api/workshops');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const mapped: Workshop[] = data.map((w: any) => ({
+          id: w._id || w.id || 'ws-' + Math.random().toString(36).substring(2, 9),
+          title: w.title || 'Untitled Workshop',
+          description: w.description || '',
+          speakerId: w.speakerId || 'speaker-1',
+          speakerName: w.speakerName || w.instructor || 'TechBlitz Instructor',
+          status: w.status || 'published',
+          meetLink: w.meetLink || w.virtualMeetingUrl || '',
+          scheduledStartTime: w.scheduledStartTime || w.startTime || new Date().toISOString(),
+          scheduledEndTime: w.scheduledEndTime || w.endTime || new Date().toISOString(),
+          minAttendanceMinutes: w.minAttendanceMinutes || 30,
+          maxCapacity: w.maxCapacity || 100,
+          track: w.track || 'Engineering',
+        }));
+        const db = getDB();
+        db.workshops = mapped;
+        saveDB(db);
+        return mapped;
+      }
+    }
+  } catch (err) {
+    // Fallback to local DB silently
+  }
+  return getAllWorkshops();
 }
 
 export function getWorkshopById(id: string): Workshop | undefined {
@@ -527,6 +645,40 @@ export function pingAttendance(userId: string, workshopId: string): AttendanceLo
 
   saveDB(db);
   return log;
+}
+
+export function markAttendance(userId: string, workshopId: string): AttendanceLog {
+  const db = getDB();
+  let log = db.attendanceLogs.find((a) => a.userId === userId && a.workshopId === workshopId);
+  const ws = db.workshops.find((w) => w.id === workshopId);
+
+  if (!log) {
+    log = {
+      id: 'att-' + generateId(),
+      userId,
+      workshopId,
+      lastPingAt: new Date().toISOString(),
+      totalMinutesPresent: ws?.minAttendanceMinutes || 45,
+      isEligibleForCert: true,
+    };
+    db.attendanceLogs.push(log);
+  } else {
+    log.lastPingAt = new Date().toISOString();
+    log.isEligibleForCert = true;
+  }
+
+  saveDB(db);
+  return log;
+}
+
+export function isAttendanceMarked(userId: string, workshopId: string): boolean {
+  const db = getDB();
+  return db.attendanceLogs.some((a) => a.userId === userId && a.workshopId === workshopId);
+}
+
+export function getWorkshopAttendanceCount(workshopId: string): number {
+  const db = getDB();
+  return db.attendanceLogs.filter((a) => a.workshopId === workshopId).length;
 }
 
 // ------- Certificates -------

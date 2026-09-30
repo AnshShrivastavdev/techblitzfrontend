@@ -82,19 +82,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (firebaseUser) {
         // User is logged into Firebase
         const existingRaw = localStorage.getItem(SESSION_KEY);
-        const isAdmin = Boolean(firebaseUser.email && isAdminEmail(firebaseUser.email));
-        let currentRole: 'student' | 'admin' = isAdmin ? 'admin' : 'student';
         let localProfile: User | null = null;
+        let sessRole: string | null = null;
 
-        if (existingRaw && !isAdmin) {
+        if (existingRaw) {
           try {
             const sess = JSON.parse(existingRaw);
-            currentRole = sess.role === 'admin' ? 'admin' : 'student';
-            localProfile = getUserById(sess.id);
+            sessRole = sess.role || null;
+            localProfile = getUserById(sess.id) || null;
           } catch {
             // Ignore parse errors
           }
         }
+        if (!localProfile && firebaseUser.uid) {
+          localProfile = getUserById(firebaseUser.uid) || null;
+        }
+
+        const isAdmin = Boolean(
+          (firebaseUser.email && isAdminEmail(firebaseUser.email)) ||
+          localProfile?.role === 'admin' ||
+          sessRole === 'admin'
+        );
+        const currentRole: 'student' | 'admin' = isAdmin ? 'admin' : 'student';
 
         const syncedUser: User = {
           id: firebaseUser.uid,
@@ -102,9 +111,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: firebaseUser.email || '',
           role: currentRole,
           college: localProfile?.college || 'Jabalpur Engineering College',
-          branch: localProfile?.branch || 'Computer Science & Engineering',
-          semester: localProfile?.semester || '4th',
-          rollNumber: localProfile?.rollNumber || '0201CS241001',
+          branch: localProfile?.branch || '',
+          semester: localProfile?.semester || '',
+          rollNumber: localProfile?.rollNumber || '',
+          phone: localProfile?.phone || '',
           createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
         };
 
@@ -120,7 +130,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const session = JSON.parse(raw);
             const freshUser = getUserById(session.id);
             if (freshUser) {
-              const role: 'student' | 'admin' = session.role === 'admin' ? 'admin' : 'student';
+              const isAdmin = Boolean(isAdminEmail(freshUser.email) || freshUser.role === 'admin' || session.role === 'admin');
+              const role: 'student' | 'admin' = isAdmin ? 'admin' : 'student';
               setUser({ ...freshUser, role });
             }
           } catch {

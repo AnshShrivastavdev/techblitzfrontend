@@ -6,7 +6,7 @@ import {
   deleteDoc,
   onSnapshot,
 } from 'firebase/firestore';
-import { User, upsertUser, deleteUserById, getAllUsers, exportToCSV } from '@/services/storageService';
+import { User, upsertUser, deleteUserById, getAllUsers, exportToCSV, isAdminEmail } from '@/services/storageService';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://techblitzfrontend.onrender.com/api';
 
@@ -23,7 +23,7 @@ export async function syncStudentToCloud(userData: Partial<User>): Promise<void>
     id: userData.id || 'std_' + Math.random().toString(36).slice(2, 9),
     name: userData.name || userData.email.split('@')[0],
     email: userData.email.toLowerCase().trim(),
-    role: userData.role === 'admin' ? 'admin' : 'student',
+    role: (userData.role === 'admin' || isAdminEmail(userData.email)) ? 'admin' : 'student',
     college: userData.college || 'Jabalpur Engineering College',
     branch: userData.branch || 'CSE',
     semester: userData.semester || '',
@@ -111,7 +111,7 @@ export function subscribeToRealtimeStudents(
 
   const emitMerged = () => {
     // Merge any existing local students
-    const local = getAllUsers().filter((u) => u.role !== 'admin');
+    const local = getAllUsers().filter((u) => u.role !== 'admin' && !isAdminEmail(u.email));
     local.forEach((u) => {
       const key = u.email.toLowerCase().trim();
       if (!studentMap.has(key)) {
@@ -120,7 +120,7 @@ export function subscribeToRealtimeStudents(
     });
 
     const result = Array.from(studentMap.values())
-      .filter((u) => u.role !== 'admin' && !u.email.includes('@university.edu') && !u.email.includes('@college.edu'))
+      .filter((u) => u.role !== 'admin' && !isAdminEmail(u.email))
       .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
     onUpdate(result);
@@ -135,7 +135,7 @@ export function subscribeToRealtimeStudents(
       (snapshot) => {
         snapshot.forEach((docSnap) => {
           const data = docSnap.data() as any;
-          if (data && data.email && data.role !== 'admin') {
+          if (data && data.email && data.role !== 'admin' && !isAdminEmail(data.email)) {
             studentMap.set(data.email.toLowerCase().trim(), {
               id: docSnap.id,
               name: data.name || 'Participant',
@@ -185,7 +185,7 @@ export function subscribeToRealtimeStudents(
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
           json.data.forEach((u: any) => {
-            if (u.email && u.role !== 'admin') {
+            if (u.email && u.role !== 'admin' && !isAdminEmail(u.email)) {
               const key = u.email.toLowerCase().trim();
               const existing = studentMap.get(key);
               studentMap.set(key, {

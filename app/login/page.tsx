@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { ShaderAnimation } from '@/components/ui/shader-lines';
 import { useAuth } from '@/context/AuthContext';
+import { isAdminEmail } from '@/services/storageService';
 
 function AuthContent() {
   const { login, register, loginWithGoogle } = useAuth();
@@ -53,7 +54,7 @@ function AuthContent() {
     if (result.success && result.user) {
       const isTargetAdmin =
         result.user.role === 'admin' ||
-        (result.user.email && result.user.email.toLowerCase().trim() === 'cosmos.jec@jecjabalpur.ac.in');
+        isAdminEmail(result.user.email);
       if (isTargetAdmin) {
         setSuccess('ADMINISTRATOR CLEARANCE ACCEPTED // ROUTING TO MISSION CONTROL...');
         setTimeout(() => {
@@ -81,7 +82,7 @@ function AuthContent() {
     if (result.success && result.user) {
       const isTargetAdmin =
         result.user.role === 'admin' ||
-        (result.user.email && result.user.email.toLowerCase().trim() === 'cosmos.jec@jecjabalpur.ac.in');
+        isAdminEmail(result.user.email);
       if (isTargetAdmin) {
         setSuccess('ADMINISTRATOR CLEARANCE ACCEPTED // ROUTING TO MISSION CONTROL...');
         setTimeout(() => {
@@ -117,7 +118,7 @@ function AuthContent() {
     if (result.success) {
       const isTargetAdmin =
         result.user?.role === 'admin' ||
-        createEmail.toLowerCase().trim() === 'cosmos.jec@jecjabalpur.ac.in';
+        isAdminEmail(createEmail);
       if (isTargetAdmin) {
         setSuccess('ADMINISTRATOR PROFILE REGISTERED // ROUTING TO MISSION CONTROL...');
         setTimeout(() => {

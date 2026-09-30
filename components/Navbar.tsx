@@ -11,6 +11,10 @@ export function Navbar() {
 
   const scrollTo = (id: string) => {
     setMobileMenuOpen(false);
+    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+      router.push(`/#${id}`);
+      return;
+    }
     const element = document.getElementById(id);
     if (element) {
       const lenis = typeof window !== 'undefined' ? (window as any).__lenis : null;

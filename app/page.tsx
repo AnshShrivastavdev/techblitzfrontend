@@ -9,6 +9,7 @@ import { AboutSection } from '@/components/AboutSection';
 import { OutreachPartnersSection } from '@/components/OutreachPartnersSection';
 import { SpeakersSection } from '@/components/SpeakersSection';
 import { GallerySection } from '@/components/GallerySection';
+import { RegisterSection } from '@/components/RegisterSection';
 import { FaqSection } from '@/components/FaqSection';
 import { Footer } from '@/components/Footer';
 
@@ -49,6 +50,9 @@ export default function Home() {
 
         {/* Gallery Section (#gallery) */}
         <GallerySection />
+
+        {/* Participant Pass Registration Section (#register) */}
+        <RegisterSection />
 
         {/* FAQ Accessible Accordion (#faq) */}
         <FaqSection />

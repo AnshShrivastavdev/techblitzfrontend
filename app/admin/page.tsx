@@ -26,6 +26,9 @@ import {
   getSpeakers,
   addSpeaker,
   deleteSpeaker,
+  isAdminEmail,
+  fetchWorkshopsFromAPI,
+  getWorkshopAttendanceCount,
 } from '@/services/storageService';
 import {
   subscribeToRealtimeStudents,
@@ -76,41 +79,60 @@ export default function DashboardAdmin() {
         router.push('/login');
       } else if (
         user.role !== 'admin' &&
-        user.email?.toLowerCase().trim() !== 'cosmos.jec@jecjabalpur.ac.in'
+        !isAdminEmail(user.email)
       ) {
         router.push('/dashboard');
       }
     }
   }, [user, loading, router]);
 
-  const [module, setModule] = useState<'overview' | 'workshops' | 'users' | 'attendance' | 'certificates' | 'speakers'>('overview');
+  const [module, setModule] = useState<'overview' | 'workshops' | 'users' | 'registrations' | 'certificates'>('overview');
   const [users, setUsers] = useState<User[]>([]);
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [attendance, setAttendance] = useState<AttendanceLog[]>([]);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
-  const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [feedback, setFeedback] = useState<{ type: string; msg: string }>({ type: '', msg: '' });
+
+  // Workshop editing state
+  const [editingWsId, setEditingWsId] = useState<string | null>(null);
+  const [editingWsData, setEditingWsData] = useState({
+    title: '',
+    speakerName: '',
+    scheduledStartTime: '',
+    scheduledEndTime: '',
+    meetLink: '',
+  });
+
+  const handleStartEditingWs = (ws: Workshop) => {
+    setEditingWsId(ws.id);
+    setEditingWsData({
+      title: ws.title || '',
+      speakerName: ws.speakerName || '',
+      scheduledStartTime: ws.scheduledStartTime ? new Date(ws.scheduledStartTime).toISOString().slice(0, 16) : '',
+      scheduledEndTime: ws.scheduledEndTime ? new Date(ws.scheduledEndTime).toISOString().slice(0, 16) : '',
+      meetLink: ws.meetLink || 'https://meet.google.com/cos-tech-live',
+    });
+  };
+
+  const handleSaveWsEditing = (workshopId: string) => {
+    updateWorkshop(workshopId, {
+      title: editingWsData.title,
+      speakerName: editingWsData.speakerName,
+      scheduledStartTime: editingWsData.scheduledStartTime ? new Date(editingWsData.scheduledStartTime).toISOString() : new Date().toISOString(),
+      scheduledEndTime: editingWsData.scheduledEndTime ? new Date(editingWsData.scheduledEndTime).toISOString() : new Date().toISOString(),
+      meetLink: editingWsData.meetLink,
+    });
+    setWorkshops(getAllWorkshops());
+    setEditingWsId(null);
+    setFeedback({ type: 'success', msg: 'Workshop Start & End dates updated successfully!' });
+    setTimeout(() => setFeedback({ type: '', msg: '' }), 3000);
+  };
 
   // Filters & Modals
   const [userSearch, setUserSearch] = useState('');
-  const [speakerSearch, setSpeakerSearch] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState('all');
   const [showCreateWs, setShowCreateWs] = useState(false);
-  const [showCreateSpeaker, setShowCreateSpeaker] = useState(false);
-
-  // New Speaker Form State
-  const [newSpeaker, setNewSpeaker] = useState({
-    name: '',
-    role: '',
-    company: '',
-    batch: '',
-    education: '',
-    domain: '',
-    experience: '',
-    category: 'Big Tech & Systems',
-    photo: '',
-  });
 
   // New Workshop Form State
   const [newWs, setNewWs] = useState({
@@ -127,13 +149,13 @@ export default function DashboardAdmin() {
     status: 'published' as Workshop['status'],
   });
 
-  const loadAll = () => {
+  const loadAll = async () => {
     setUsers(getAllUsers());
-    setWorkshops(getAllWorkshops());
+    const liveWs = await fetchWorkshopsFromAPI();
+    setWorkshops(liveWs);
     setRegistrations(getRegistrations());
     setAttendance(getAttendanceLogs());
     setCertificates(getCertificates());
-    setSpeakers(getSpeakers());
     getFAQs();
   };
 
@@ -272,7 +294,7 @@ export default function DashboardAdmin() {
     doc.save(`Certificate_${cert.certificateNumber || cert.id}.pdf`);
   };
 
-  const allStudents = users.filter((u) => u.role !== 'admin');
+  const allStudents = users.filter((u) => u.role !== 'admin' && !isAdminEmail(u.email));
   const uniqueBranches = Array.from(
     new Set(allStudents.map((u) => (u.branch || 'CSE').toUpperCase().trim()).filter(Boolean))
   ).sort();
@@ -417,25 +439,19 @@ export default function DashboardAdmin() {
             className={`dash-tab ${module === 'users' ? 'dash-tab--active' : ''}`}
             onClick={() => setModule('users')}
           >
-            <Users size={16} /> Student Management ({allStudents.length})
+            <Users size={16} /> Student Details ({allStudents.length})
           </button>
           <button
-            className={`dash-tab ${module === 'attendance' ? 'dash-tab--active' : ''}`}
-            onClick={() => setModule('attendance')}
+            className={`dash-tab ${module === 'registrations' ? 'dash-tab--active' : ''}`}
+            onClick={() => setModule('registrations')}
           >
-            <Clock size={16} /> Telemetry Logs ({attendance.length})
+            <FileSpreadsheet size={16} /> Registration Details ({registrations.length})
           </button>
           <button
             className={`dash-tab ${module === 'certificates' ? 'dash-tab--active' : ''}`}
             onClick={() => setModule('certificates')}
           >
             <Award size={16} /> Certificate Engine ({certificates.length})
-          </button>
-          <button
-            className={`dash-tab ${module === 'speakers' ? 'dash-tab--active' : ''}`}
-            onClick={() => setModule('speakers')}
-          >
-            <Mic size={16} /> Speakers & Mentors ({speakers.length})
           </button>
         </div>
 
@@ -565,13 +581,26 @@ export default function DashboardAdmin() {
 
                 <div className="dash-form-row">
                   <div className="dash-form-group">
-                    <label>Scheduled Date & Time</label>
+                    <label>Start Date & Time *</label>
                     <input
                       type="datetime-local"
+                      required
                       value={newWs.scheduledStartTime}
                       onChange={(e) => setNewWs({ ...newWs, scheduledStartTime: e.target.value })}
                     />
                   </div>
+                  <div className="dash-form-group">
+                    <label>End Date & Time *</label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={newWs.scheduledEndTime}
+                      onChange={(e) => setNewWs({ ...newWs, scheduledEndTime: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="dash-form-row">
                   <div className="dash-form-group">
                     <label>Minimum Attendance (Minutes)</label>
                     <input
@@ -626,51 +655,140 @@ export default function DashboardAdmin() {
                       <span className="dash-category-tag">{ws.track || 'Cosmos Track'}</span>
                     </div>
 
-                    <h4 className="dash-card__title">{ws.title}</h4>
-                    <p className="dash-card__desc">Speaker: {ws.speakerName || 'Dr. Sarah Chen'}</p>
+                    {editingWsId === ws.id ? (
+                      <div style={{ padding: 12, borderRadius: 10, background: 'rgba(0,0,0,0.6)', border: '1px solid #38bdf8', marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <h5 style={{ color: '#38bdf8', margin: 0, fontSize: '0.85rem' }}>Edit Workshop Schedule & Link</h5>
+                        
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: 2 }}>Start Date & Time</label>
+                          <input
+                            type="datetime-local"
+                            value={editingWsData.scheduledStartTime}
+                            onChange={(e) => setEditingWsData({ ...editingWsData, scheduledStartTime: e.target.value })}
+                            style={{ width: '100%', padding: '5px 8px', borderRadius: 6, background: '#09090b', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: '0.78rem' }}
+                          />
+                        </div>
 
-                    <div className="dash-card__meta">
-                      <div>
-                        <Clock size={14} /> {ws.minAttendanceMinutes * 3 || 90} min
-                      </div>
-                      <div>
-                        <Calendar size={14} />{' '}
-                        {ws.scheduledStartTime
-                          ? new Date(ws.scheduledStartTime).toLocaleDateString()
-                          : 'September 2026'}
-                      </div>
-                    </div>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: 2 }}>End Date & Time</label>
+                          <input
+                            type="datetime-local"
+                            value={editingWsData.scheduledEndTime}
+                            onChange={(e) => setEditingWsData({ ...editingWsData, scheduledEndTime: e.target.value })}
+                            style={{ width: '100%', padding: '5px 8px', borderRadius: 6, background: '#09090b', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: '0.78rem' }}
+                          />
+                        </div>
 
-                    {/* Admin State Transitions */}
-                    <div className="dash-card__footer" style={{ flexDirection: 'column', gap: 8 }}>
-                      <div style={{ display: 'flex', gap: 6, width: '100%' }}>
-                        {ws.status !== 'live' ? (
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: 2 }}>Google Meet Link</label>
+                          <input
+                            type="url"
+                            value={editingWsData.meetLink}
+                            onChange={(e) => setEditingWsData({ ...editingWsData, meetLink: e.target.value })}
+                            placeholder="https://meet.google.com/..."
+                            style={{ width: '100%', padding: '5px 8px', borderRadius: 6, background: '#09090b', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: '0.78rem' }}
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                           <button
-                            onClick={() => handleUpdateStatus(ws.id, 'live')}
-                            className="dash-btn-telemetry"
-                            style={{ flex: 1 }}
+                            onClick={() => handleSaveWsEditing(ws.id)}
+                            className="dash-btn-primary"
+                            style={{ flex: 1, padding: '6px 12px', fontSize: '0.78rem' }}
                           >
-                            <Play size={14} /> Set Live
+                            Save Changes
                           </button>
-                        ) : (
                           <button
-                            onClick={() => handleUpdateStatus(ws.id, 'completed')}
+                            onClick={() => setEditingWsId(null)}
                             className="dash-btn-secondary"
-                            style={{ flex: 1 }}
+                            style={{ padding: '6px 12px', fontSize: '0.78rem' }}
                           >
-                            <Square size={14} /> Complete
+                            Cancel
                           </button>
-                        )}
-
-                        <button
-                          onClick={() => handleDeleteWorkshop(ws.id)}
-                          className="dash-btn-danger"
-                          title="Delete Workshop"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <h4 className="dash-card__title">{ws.title}</h4>
+                        <p className="dash-card__desc">Speaker: {ws.speakerName || 'Dr. Sarah Chen'}</p>
+
+                        <div className="dash-card__meta" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+                          <div style={{ fontSize: '0.78rem', color: '#38bdf8' }}>
+                            <Calendar size={13} style={{ display: 'inline', marginRight: 4 }} />
+                            <strong>Start:</strong>{' '}
+                            {ws.scheduledStartTime
+                              ? new Date(ws.scheduledStartTime).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })
+                              : 'TBA'}
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: '#a7f3d0' }}>
+                            <Calendar size={13} style={{ display: 'inline', marginRight: 4 }} />
+                            <strong>End:</strong>{' '}
+                            {ws.scheduledEndTime
+                              ? new Date(ws.scheduledEndTime).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })
+                              : 'TBA'}
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: '#f59e0b', fontWeight: 600, marginTop: 2 }}>
+                            <CheckCircle2 size={13} style={{ display: 'inline', marginRight: 4 }} />
+                            <strong>Attendance Count:</strong> {getWorkshopAttendanceCount(ws.id)} Marked ({registrations.filter((r) => r.workshopId === ws.id).length} Enrolled)
+                          </div>
+                        </div>
+
+                        {/* Google Meet Link Display */}
+                        <div style={{ margin: '10px 0', padding: 8, borderRadius: 8, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                          <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Google Meet Link:
+                          </div>
+                          <a
+                            href={ws.meetLink || 'https://meet.google.com'}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ fontSize: '0.78rem', color: '#38bdf8', textDecoration: 'underline', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'block' }}
+                          >
+                            {ws.meetLink || 'https://meet.google.com/cos-tech-live'}
+                          </a>
+                        </div>
+
+                        {/* Admin State & Edit Controls */}
+                        <div className="dash-card__footer" style={{ flexDirection: 'column', gap: 8 }}>
+                          <div style={{ display: 'flex', gap: 6, width: '100%' }}>
+                            <button
+                              onClick={() => handleStartEditingWs(ws)}
+                              className="dash-btn-secondary"
+                              style={{ flex: 1, padding: '6px 10px', fontSize: '0.75rem', gap: 4 }}
+                            >
+                              <Calendar size={13} /> Edit Dates & Link
+                            </button>
+
+                            {ws.status !== 'live' ? (
+                              <button
+                                onClick={() => handleUpdateStatus(ws.id, 'live')}
+                                className="dash-btn-telemetry"
+                                style={{ padding: '6px 10px', fontSize: '0.75rem' }}
+                              >
+                                <Play size={14} /> Set Live
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleUpdateStatus(ws.id, 'completed')}
+                                className="dash-btn-secondary"
+                                style={{ padding: '6px 10px', fontSize: '0.75rem' }}
+                              >
+                                <Square size={14} /> Complete
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => handleDeleteWorkshop(ws.id)}
+                              className="dash-btn-danger"
+                              title="Delete Workshop"
+                              style={{ padding: '6px 10px' }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
@@ -678,14 +796,14 @@ export default function DashboardAdmin() {
           </div>
         )}
 
-        {/* MODULE 3: REAL-TIME STUDENT MANAGEMENT CONSOLE */}
+        {/* MODULE 3: REAL-TIME STUDENT DETAILS CONSOLE */}
         {module === 'users' && (
           <div className="dash-content-pane">
             {/* Header with Title and Actions */}
             <div className="dash-pane-header" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <h3 style={{ margin: 0 }}>Real-Time Student Management Console</h3>
+                  <h3 style={{ margin: 0 }}>Student Details Console</h3>
                   <span
                     style={{
                       display: 'inline-flex',
@@ -709,11 +827,11 @@ export default function DashboardAdmin() {
                         boxShadow: '0 0 8px #10b981',
                       }}
                     />
-                    Live Telemetry Sync Active
+                    Live Student Database Sync
                   </span>
                 </div>
                 <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: '6px 0 0' }}>
-                  Synchronized live roster across Firebase Firestore & MongoDB • Calibrated for real-time management of 1,220 to 1,500+ student delegates
+                  Synchronized student roster across Firebase Firestore & MongoDB • Direct access to participant credentials and contact dossiers
                 </p>
               </div>
 
@@ -1249,50 +1367,101 @@ export default function DashboardAdmin() {
           </div>
         )}
 
-        {/* MODULE 4: ATTENDANCE TRACKER */}
-        {module === 'attendance' && (
+        {/* MODULE 4: REGISTRATION DETAILS */}
+        {module === 'registrations' && (
           <div className="dash-content-pane">
-            <div className="dash-pane-header">
-              <h3>Telemetry Attendance Heartbeats</h3>
-              <button onClick={exportAttendanceCSV} className="dash-btn-secondary">
-                <FileSpreadsheet size={15} /> Export Attendance CSV
-              </button>
+            <div className="dash-pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ margin: 0 }}>All Student Workshop Registrations</h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: '4px 0 0' }}>
+                  Complete manifest of registered workshops by all participants across TechBlitz tracks
+                </p>
+              </div>
+              <span className="dash-counter-pill font-mono font-bold" style={{ color: '#38bdf8', borderColor: 'rgba(56,189,248,0.3)' }}>
+                {registrations.length} Total Registrations
+              </span>
             </div>
 
-            <div className="dash-table-wrap">
+            <div className="dash-table-wrap" style={{ marginTop: 16 }}>
               <table className="dash-table">
                 <thead>
                   <tr>
-                    <th>Participant</th>
-                    <th>Workshop</th>
-                    <th>Minutes Logged</th>
-                    <th>Last Heartbeat</th>
-                    <th>Certificate Status</th>
+                    <th>Participant Name</th>
+                    <th>Email & Contact</th>
+                    <th>College & Branch</th>
+                    <th>Registered Workshop</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Attendance Status</th>
+                    <th>Registration Date</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {attendance.length === 0 ? (
+                  {registrations.length === 0 ? (
                     <tr>
-                      <td colSpan={5} style={{ textAlign: 'center', padding: '36px 16px', color: '#94a3b8' }}>
-                        No live telemetry heartbeats recorded yet. Heartbeats will log automatically when participants join live broadcasts.
+                      <td colSpan={7} style={{ textAlign: 'center', padding: '36px 16px', color: '#94a3b8' }}>
+                        No registrations recorded yet. When participants enroll in workshops, their details will appear here.
                       </td>
                     </tr>
                   ) : (
-                    attendance.map((att) => {
-                      const student = users.find((u) => u.id === att.userId);
-                      const ws = workshops.find((w) => w.id === att.workshopId);
+                    registrations.map((reg) => {
+                      const student = users.find((u) => u.id === reg.userId);
+                      const ws = workshops.find((w) => w.id === reg.workshopId);
+                      const isAttended = attendance.some((a) => a.userId === reg.userId && a.workshopId === reg.workshopId);
                       return (
-                        <tr key={att.id}>
-                          <td>{student?.name || att.userId}</td>
-                          <td>{ws?.title || att.workshopId}</td>
-                          <td>{att.totalMinutesPresent} mins</td>
-                          <td>{new Date(att.lastPingAt).toLocaleTimeString()}</td>
+                        <tr key={reg.id}>
                           <td>
-                            {att.isEligibleForCert ? (
-                              <span style={{ color: '#34d399', fontWeight: 600 }}>✓ Eligible</span>
+                            <strong style={{ color: '#f8fafc', fontSize: '0.88rem' }}>
+                              {student?.name || reg.userId}
+                            </strong>
+                          </td>
+                          <td>
+                            <div style={{ fontSize: '0.8rem', color: '#38bdf8', fontFamily: 'monospace' }}>
+                              {student?.email || 'N/A'}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                              {student?.phone || '—'}
+                            </div>
+                          </td>
+                          <td>
+                            <div style={{ fontSize: '0.8rem', color: '#e2e8f0' }}>
+                              {student?.college || student?.institution || 'Jabalpur Engineering College'}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#38bdf8' }}>
+                              {student?.branch || 'CSE'} {student?.rollNumber ? `(${student.rollNumber})` : ''}
+                            </div>
+                          </td>
+                          <td>
+                            <span style={{ fontWeight: 600, color: '#ffffff' }}>{ws?.title || reg.workshopId}</span>
+                            <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                              Track: {ws?.track || 'Cosmos Track'}
+                            </div>
+                          </td>
+                          <td>
+                            <div style={{ fontSize: '0.78rem', color: '#38bdf8' }}>
+                              {ws?.scheduledStartTime ? new Date(ws.scheduledStartTime).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' }) : 'TBA'}
+                            </div>
+                          </td>
+                          <td>
+                            <div style={{ fontSize: '0.78rem', color: '#a7f3d0' }}>
+                              {ws?.scheduledEndTime ? new Date(ws.scheduledEndTime).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' }) : 'TBA'}
+                            </div>
+                          </td>
+                          <td>
+                            {isAttended ? (
+                              <span style={{ color: '#34d399', fontWeight: 700, fontSize: '0.8rem', background: 'rgba(16,185,129,0.12)', padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(16,185,129,0.3)' }}>
+                                ✓ Marked
+                              </span>
                             ) : (
-                              <span style={{ color: '#94a3b8' }}>Accumulating...</span>
+                              <span style={{ color: '#94a3b8', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)' }}>
+                                ○ Pending
+                              </span>
                             )}
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                              {reg.registeredAt ? new Date(reg.registeredAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent'}
+                            </span>
                           </td>
                         </tr>
                       );
@@ -1350,283 +1519,6 @@ export default function DashboardAdmin() {
                 ))}
               </div>
             )}
-          </div>
-        )}
-
-        {/* MODULE 6: SPEAKERS & MENTORS */}
-        {module === 'speakers' && (
-          <div className="dash-content-pane">
-            <div className="dash-pane-header">
-              <div>
-                <h3 style={{ margin: 0 }}>Speakers & Keynote Mentors ({speakers.length})</h3>
-                <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: '4px 0 0' }}>
-                  Distinguished JEC alumni & guest leaders featured on the TechBlitz 2.0 main launchpad.
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  onClick={() => setShowCreateSpeaker(!showCreateSpeaker)}
-                  className="dash-btn-primary"
-                >
-                  <Plus size={16} /> Register Speaker
-                </button>
-              </div>
-            </div>
-
-            {/* Create Speaker Form */}
-            {showCreateSpeaker && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!newSpeaker.name || !newSpeaker.company || !newSpeaker.role) {
-                    showToast('error', 'Name, Company, and Role are required.');
-                    return;
-                  }
-                  addSpeaker(newSpeaker);
-                  setNewSpeaker({
-                    name: '',
-                    role: '',
-                    company: '',
-                    batch: '',
-                    education: '',
-                    domain: '',
-                    experience: '',
-                    category: 'Big Tech & Systems',
-                    photo: '',
-                  });
-                  setShowCreateSpeaker(false);
-                  loadAll();
-                  showToast('success', 'New speaker registered successfully!');
-                }}
-                className="dash-profile-form"
-                style={{ marginBottom: 28 }}
-              >
-                <h4 style={{ color: '#38bdf8', marginBottom: 14 }}>Register Distinguished Speaker</h4>
-                <div className="dash-form-row">
-                  <div className="dash-form-group">
-                    <label>Speaker Name *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Dr. Sudhir Kumar Mishra"
-                      value={newSpeaker.name}
-                      onChange={(e) => setNewSpeaker({ ...newSpeaker, name: e.target.value })}
-                    />
-                  </div>
-                  <div className="dash-form-group">
-                    <label>Current Role / Designation *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Software Engineer III / Lead Architect"
-                      value={newSpeaker.role}
-                      onChange={(e) => setNewSpeaker({ ...newSpeaker, role: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="dash-form-row">
-                  <div className="dash-form-group">
-                    <label>Company / Organization *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Google / DRDO / Adobe"
-                      value={newSpeaker.company}
-                      onChange={(e) => setNewSpeaker({ ...newSpeaker, company: e.target.value })}
-                    />
-                  </div>
-                  <div className="dash-form-group">
-                    <label>JEC Batch</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. JEC 2018 Batch"
-                      value={newSpeaker.batch}
-                      onChange={(e) => setNewSpeaker({ ...newSpeaker, batch: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="dash-form-row">
-                  <div className="dash-form-group">
-                    <label>Educational Background</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. B.E. JEC (2014-2018) • M.Tech IIIT Bangalore"
-                      value={newSpeaker.education}
-                      onChange={(e) => setNewSpeaker({ ...newSpeaker, education: e.target.value })}
-                    />
-                  </div>
-                  <div className="dash-form-group">
-                    <label>Category Domain</label>
-                    <select
-                      value={newSpeaker.category}
-                      onChange={(e) => setNewSpeaker({ ...newSpeaker, category: e.target.value })}
-                      className="dash-select"
-                    >
-                      <option value="Defence & Aerospace">Defence & Aerospace</option>
-                      <option value="Big Tech & Systems">Big Tech & Systems</option>
-                      <option value="AI & Data Science">AI & Data Science</option>
-                      <option value="Core Industry">Core Industry</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="dash-form-row">
-                  <div className="dash-form-group">
-                    <label>Photo URL (Optional)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. /speakers/vinayak-chaturvedi.jpg"
-                      value={newSpeaker.photo}
-                      onChange={(e) => setNewSpeaker({ ...newSpeaker, photo: e.target.value })}
-                    />
-                  </div>
-                  <div className="dash-form-group">
-                    <label>Core Technical Domain</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Cloud Distributed Systems & ML"
-                      value={newSpeaker.domain}
-                      onChange={(e) => setNewSpeaker({ ...newSpeaker, domain: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="dash-form-group" style={{ marginBottom: 16 }}>
-                  <label>Professional Experience / Summary</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Brief career overview, companies, and achievements..."
-                    value={newSpeaker.experience}
-                    onChange={(e) => setNewSpeaker({ ...newSpeaker, experience: e.target.value })}
-                    className="dash-input"
-                    style={{ width: '100%' }}
-                  />
-                </div>
-
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button type="submit" className="dash-btn-primary">
-                    Save Speaker
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateSpeaker(false)}
-                    className="dash-btn-secondary"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {/* Search filter for speakers */}
-            <div style={{ marginBottom: 18 }}>
-              <input
-                type="text"
-                placeholder="Search speakers by name, company, role, or batch..."
-                value={speakerSearch}
-                onChange={(e) => setSpeakerSearch(e.target.value)}
-                className="dash-input"
-                style={{ width: '100%', maxWidth: 420 }}
-              />
-            </div>
-
-            {/* Speakers Cards Grid */}
-            <div className="dash-grid-cards">
-              {speakers
-                .filter((s) => {
-                  if (!speakerSearch.trim()) return true;
-                  const q = speakerSearch.toLowerCase();
-                  return (
-                    s.name.toLowerCase().includes(q) ||
-                    s.company.toLowerCase().includes(q) ||
-                    s.role.toLowerCase().includes(q) ||
-                    (s.batch && s.batch.toLowerCase().includes(q))
-                  );
-                })
-                .map((spk) => (
-                  <div key={spk.id} className="dash-card" style={{ height: '100%', margin: 0 }}>
-                    <div className="dash-card__top">
-                      <span className="dash-category-tag">{spk.category || 'Big Tech'}</span>
-                      {spk.batch && (
-                        <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>
-                          ⚡ JEC {spk.batch}
-                        </span>
-                      )}
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8, marginBottom: 10 }}>
-                      <div
-                        style={{
-                          width: 48,
-                          height: 48,
-                          borderRadius: '50%',
-                          overflow: 'hidden',
-                          backgroundColor: '#1e293b',
-                          border: '1px solid rgba(56, 189, 248, 0.4)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {spk.photo ? (
-                          <img
-                            src={spk.photo}
-                            alt={spk.name}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
-                        ) : (
-                          <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.9rem' }}>
-                            {spk.name
-                              .split(' ')
-                              .filter((w) => !w.startsWith('Dr.'))
-                              .slice(0, 2)
-                              .map((n) => n[0])
-                              .join('')}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="dash-card__title" style={{ margin: 0, fontSize: '1.05rem' }}>
-                          {spk.name}
-                        </h4>
-                        <div style={{ color: '#38bdf8', fontSize: '0.8rem', fontWeight: 600 }}>
-                          {spk.role}
-                        </div>
-                        <div style={{ color: '#cbd5e1', fontSize: '0.78rem' }}>
-                          {spk.company}
-                        </div>
-                      </div>
-                    </div>
-
-                    <p className="dash-card__desc" style={{ fontSize: '0.8rem', lineHeight: 1.4, margin: '8px 0' }}>
-                      {spk.experience || spk.domain || spk.education}
-                    </p>
-
-                    <div style={{ marginTop: 'auto', paddingTop: 12, borderTop: '1px solid rgba(255, 255, 255, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                        {spk.education?.split('•')[0] || 'Jabalpur Engineering College'}
-                      </span>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Remove speaker ${spk.name}?`)) {
-                            deleteSpeaker(spk.id);
-                            loadAll();
-                            showToast('success', `Speaker "${spk.name}" removed.`);
-                          }
-                        }}
-                        className="dash-btn-danger"
-                        style={{ padding: '4px 8px', fontSize: '0.72rem' }}
-                        title="Delete Speaker"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-            </div>
           </div>
         )}
       </main>

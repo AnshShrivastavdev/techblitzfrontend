@@ -71,35 +71,59 @@ export function AboutSection() {
             </span>
           </div>
 
-          {/* Interactive ParticleText Container */}
-          <div
-            style={{ width: '100%', height: 360, background: '#09090f' }}
-            className="rounded-2xl border border-white/10 overflow-hidden relative shadow-2xl flex items-center justify-center"
-          >
-            <ParticleText
-              text="COMING SOON"
-              particleSize={2.2}
-              density={4}
-              color="#f8fafc"
-              highlightColor="#8b5cf6"
-              scatter={190}
-              gatherDuration={1600}
-              stagger={420}
-              pointerRepel={42}
-              repelRadius={120}
-              idleDrift={0.8}
-              trigger="mount"
-              fontSize="clamp(3.5rem, 13vw, 9rem)"
-              fontWeight={800}
-              fontFamily="inherit"
-              glow
-            />
+        {/* Event Schedule Timeline Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-6 rounded-2xl border border-cyan-500/20 bg-neutral-900/60 backdrop-blur-xl hover:border-cyan-400/40 transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-cyan-950/80 text-cyan-400 border border-cyan-500/30">DAY 01 · OCT 12</span>
+              <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/20">COMPLETED / RECAP</span>
+            </div>
+            <h4 className="text-lg font-bold text-white mb-2">Keynote & Guild Orientation</h4>
+            <p className="text-xs text-neutral-400 leading-relaxed mb-4 font-sans">
+              Opening ceremonies, Cosmos Guild roadmap unveiling, hardware showcase, and keynote address by CSE Department Faculty.
+            </p>
+            <div className="text-[11px] font-mono text-neutral-500 flex justify-between items-center border-t border-white/10 pt-3">
+              <span>09:30 AM - 01:00 PM</span>
+              <span className="text-cyan-400 font-semibold">Auditorium Hall</span>
+            </div>
           </div>
 
-          <div className="mt-6 flex items-center justify-center gap-2 text-xs font-mono text-neutral-400">
-            <Sparkles size={14} className="text-purple-400 animate-pulse" />
-            <span>SYMPOSIUM MILESTONES & SESSION SCHEDULE WILL BE ANNOUNCED SHORTLY</span>
+          <div className="p-6 rounded-2xl border border-cyan-400/40 bg-cyan-950/20 backdrop-blur-xl shadow-[0_0_25px_rgba(56,189,248,0.1)] hover:border-cyan-400/60 transition-all relative">
+            <div className="absolute -top-3 right-6 px-3 py-0.5 bg-cyan-500 text-black text-[10px] font-mono font-bold tracking-widest rounded-full uppercase shadow">
+              CURRENT PHASE
+            </div>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-400/40">DAY 02 · ACTIVE</span>
+              <span className="text-[10px] font-mono text-cyan-300 uppercase tracking-widest bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-400/30 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                LIVE WORKSHOPS
+              </span>
+            </div>
+            <h4 className="text-lg font-bold text-white mb-2">Hands-on Technical Workshops</h4>
+            <p className="text-xs text-neutral-300 leading-relaxed mb-4 font-sans">
+              Deep-dive labs on Next.js 15, AI Agent Engineering, Cloud Microservices, and Embedded IoT Telemetry.
+            </p>
+            <div className="text-[11px] font-mono text-cyan-300 flex justify-between items-center border-t border-white/10 pt-3">
+              <span>10:00 AM - 04:30 PM</span>
+              <span className="text-cyan-400 font-semibold">CSE Computer Labs</span>
+            </div>
           </div>
+
+          <div className="p-6 rounded-2xl border border-white/10 bg-neutral-900/60 backdrop-blur-xl hover:border-white/20 transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-neutral-800 text-neutral-300 border border-white/10">DAY 03 · UPCOMING</span>
+              <span className="text-[10px] font-mono text-purple-400 uppercase tracking-widest bg-purple-950/40 px-2 py-0.5 rounded border border-purple-500/20">REGISTERING</span>
+            </div>
+            <h4 className="text-lg font-bold text-white mb-2">Buildathon & Project Pitch</h4>
+            <p className="text-xs text-neutral-400 leading-relaxed mb-4 font-sans">
+              24-hour sprint presentations, peer code reviews, award distribution, and Cosmos Guild certificate verification.
+            </p>
+            <div className="text-[11px] font-mono text-neutral-500 flex justify-between items-center border-t border-white/10 pt-3">
+              <span>09:00 AM - 05:00 PM</span>
+              <span className="text-cyan-400 font-semibold">Main Campus Arena</span>
+            </div>
+          </div>
+        </div>
         </div>
       </div>
     </section>
